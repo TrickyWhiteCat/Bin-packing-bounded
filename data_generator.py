@@ -22,7 +22,7 @@ def generate_data(filename,N,K,MAX_Q,MIN_C, MAX_C):
     80 7\n
     40 10\n
     200 234\n
-    240 240\n  
+    240 240\n
     '''
     with open(filename, "w") as f:
         f.write(f"{N} {K}\n")
@@ -47,14 +47,14 @@ def generate_data(filename,N,K,MAX_Q,MIN_C, MAX_C):
     
     with open(filename, "a") as f:
         for i in range(N):
-            f.write(str(w[i])+' '+str(c[i]) +'\n')
+            f.write(f"{w[i]} {c[i]}\n")
         for k in range(K):
-            f.write(str(c1[k]) +' '+str(c2[k])+'\n')
+            f.write(f"{c1[k]} {c2[k]}\n")
 
 if __name__ == "__main__":
     generate_data(filename='1.txt',
-                  N=10,
-                  K=2,
+                  N=40,
+                  K=5,
                   MAX_Q=10,
                   MIN_C=5,
                   MAX_C=10)
