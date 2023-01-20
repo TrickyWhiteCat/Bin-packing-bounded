@@ -19,10 +19,14 @@ class Solver:
     
     - For each customer: `sum(weight[customer_index]) <= 1`
 
-    - Maximize: sum(`weight` @ `values` for every `weight`)
+    - Maximize: sum(`weight.T` @ `values` for every `weight`)
+
+    Params:
+    
+    - input_file: the path to the input data
     """
 
-    def __init__(self, input_file = None, *args):
+    def __init__(self, input_file: str = None, *args):
         super().__init__(*args)
         self.__input_file = input_file
         self.__model = cp_model.CpModel()
@@ -105,7 +109,8 @@ class Solver:
         status = solver.Solve(model=self.__model, solution_callback=solution_callback)
         if status == cp_model.OPTIMAL:
             self.num_deliver_packages = sum(solution_callback.solution)
-            # Reshape solution into a K x N one hot matrix
+            
+            # Reshape the solution into a K x N one hot matrix
             solution = []
             for truck_idx in range(self.num_trucks):
                 solution.append(solution_callback.solution[truck_idx * self.num_customers: (truck_idx+1) * self.num_customers])
@@ -117,6 +122,7 @@ class Solver:
     @property
     def plan(self):
         '''Return which goods will be delivered by which truck'''
+        self.solve()
         plan = []
         for weight in self.solution:
             on_this_truck = []
@@ -125,10 +131,14 @@ class Solver:
                     on_this_truck.append(index + 1)
             plan.append(on_this_truck)
 
-        string_plan = "\n".join([f"- Truck {idx+1} contains goods of customers {', '.join([str(val) for val in plan[idx]])}" for idx in range(len(plan))])
-        return string_plan
+        string_plan = "\n".join([f"- Truck {idx+1} contains goods of {len(plan[idx])} customers: {', '.join([str(val) for val in on_this_truck])}" for idx, on_this_truck in enumerate(plan)])
+        res = f"With the maximum total values of {int(self.objective_value)}/{self.total_value}, we deliver {self.num_deliver_packages}/{self.num_customers} packages with the plan below: \n{string_plan}"
+        return res
+
+def main():
+    solver = Solver(input_file="1.txt")
+    print(solver.plan)
+
 
 if __name__ == "__main__":
-    solver = Solver(input_file="1.txt")
-    solver.solve()
-    print(f"With the maximum total values of {int(solver.objective_value)}/{solver.total_value}, we deliver {solver.num_deliver_packages}/{solver.num_customers} packages with the plan below: \n{solver.plan}")
+    main()

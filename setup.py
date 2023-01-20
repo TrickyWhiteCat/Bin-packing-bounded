@@ -2,6 +2,7 @@ import sys
 import subprocess
 import pkg_resources
 def setup(required):
+    required = set(required)
     installed = {pkg.key for pkg in pkg_resources.working_set}
     missing   = required - installed
 
