@@ -1,6 +1,6 @@
 import random as rd
 
-
+#new branchhhh
 def generate_data(filename,N,K,MAX_Q,MIN_C, MAX_C):
     '''Generate data with format:
     First line: `N` `K`
