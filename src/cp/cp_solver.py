@@ -37,6 +37,8 @@ class Solver:
         try:
             with open(self.__input_file, "r") as inp_file:
                 lines = inp_file.readlines()
+                for i in lines:
+                    print(i)
         except FileNotFoundError:
             raise(f"File {self.__input_file} is invalid!")
     

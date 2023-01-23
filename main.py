@@ -8,7 +8,7 @@ from src.cp import cp_solver
 from data_generator import generate_data
 
 def main():
-    data_path = "12.txt"
+    data_path = "1.txt"
     generate_data(filename=data_path,
                   N = 20,
                   K = 5,
