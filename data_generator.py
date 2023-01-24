@@ -52,7 +52,7 @@ def generate_data(filename,N,K,MAX_Q,MIN_C, MAX_C):
             f.write(f"{c1[k]} {c2[k]}\n")
 
 if __name__ == "__main__":
-    generate_data(filename='1.txt',
+    generate_data(filename='12.txt',
                   N=40,
                   K=5,
                   MAX_Q=10,
