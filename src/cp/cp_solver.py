@@ -1,15 +1,32 @@
+import logging
+import time
+
+
 from ortools.sat.python import cp_model
 
 
 class SolutionCallback(cp_model.CpSolverSolutionCallback):
-    def __init__(self, variables):
+    def __init__(self, variables, time_limit = None, logger = None):
         cp_model.CpSolverSolutionCallback.__init__(self)
         self.__variables = variables
         self.solution = None
+        if logger is None:
+            logger = logging.getLogger()
+            logging.basicConfig(level=logging.INFO)
+        self.__logger = logger
+        self.__time_limit = time_limit
+
+        self.__start_time = time.time()
 
     def on_solution_callback(self):
+        end_time = time.time()
+        solve_time = end_time - self.__start_time
         self.solution = [self.Value(v) for v in self.__variables]
-
+        print(f"A solution was found with objective value: {self.ObjectiveValue()}. Time taken: {solve_time:.2f}s")
+        self.__start_time = time.time()
+        if self.__time_limit is not None:
+            if solve_time > self.__time_limit:
+                self.StopSearch()
 class Solver:
 
     """
@@ -23,13 +40,15 @@ class Solver:
 
     Params:
     
-    - input_file: the path to the input data
+    - `input_file`: the path to the input data
+    - `time_limit`: the amount of time allowed for the solver
     """
 
-    def __init__(self, input_file: str = None, *args):
+    def __init__(self, input_file: str = None, time_limit = None, *args):
         super().__init__(*args)
         self.__input_file = input_file
         self.__model = cp_model.CpModel()
+        self.__time_limit = time_limit
 
     def __read_input(self):
         if self.__input_file is None:
@@ -40,7 +59,7 @@ class Solver:
                 for i in lines:
                     print(i)
         except FileNotFoundError:
-            raise(f"File {self.__input_file} is invalid!")
+            raise(FileNotFoundError(f"File {self.__input_file} is invalid!"))
     
         # Process input into data
         quantity = [] # Quantity of goods ordered by customers
@@ -107,9 +126,11 @@ class Solver:
         self.__create_constraints()
 
         solver = cp_model.CpSolver()
-        solution_callback = SolutionCallback(variables=self.__variables)
+        if self.__time_limit:
+            solver.parameters.max_time_in_seconds = self.__time_limit
+        solution_callback = SolutionCallback(variables=self.__variables, time_limit=self.__time_limit)
         status = solver.Solve(model=self.__model, solution_callback=solution_callback)
-        if status == cp_model.OPTIMAL:
+        if status == cp_model.OPTIMAL or cp_model.FEASIBLE:
             self.num_deliver_packages = sum(solution_callback.solution)
             
             # Reshape the solution into a K x N one hot matrix
@@ -119,7 +140,7 @@ class Solver:
                 self.solution = solution
                 self.objective_value = solver.ObjectiveValue()
         else:
-            raise(f"No optimal solution found!")
+            raise(Exception(f"No solution found!"))
 
     @property
     def plan(self):
@@ -138,7 +159,7 @@ class Solver:
         return res
 
 def main():
-    solver = Solver(input_file="1.txt")
+    solver = Solver(input_file="1.txt", time_limit = 3)
     print(solver.plan)
 
 
