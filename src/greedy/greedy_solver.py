@@ -14,7 +14,8 @@ def CreatDataModel(filename,N,K,MaxQ,MinC,MaxC):
     
     x = [randint(0,K) for i in range(N)]
     # The Order i is transported by Truck x[i]
-
+    load = [0 for i in range(K)]
+    
     c1 = [0 for i in range(K)]
     c2 = [0 for i in range(K)]
 
@@ -57,8 +58,8 @@ def main():
     # CreatDataModel('Proj_17.txt',10,3,10,5,10)
     N,K,D,C,c1,c2 = Input('12.txt')
     solver = pywraplp.Solver('greedy_transfer_plan', pywraplp.Solver.GLOP_LINEAR_PROGRAMMING)
-    '''# Validate input data
-    for k in range(K):
+    # Validate input data
+    '''for k in range(K):
         if c1[k] > c2[k]:
             print("Invalid input data: c1[k] > c2[k] for some k")
             return
@@ -67,7 +68,7 @@ def main():
         if c2[k] < min_total_load:
             print("Invalid input data: c2[k] < min_total_load for some k")
             return
-        '''
+'''
     # Create variables for the amount of goods delivered from truck j to customer i
     x = [[solver.NumVar(0, solver.infinity(), f'x[{i}][{j}]') for j in range(K)] for i in range(N)]
 
