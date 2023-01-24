@@ -64,9 +64,9 @@ def main():
     # For each customer i, select the truck j that maximizes c[i]/d[i] - (y[j] - c1[j])/d[i]
     for i, _ in customers:
         max_value = -1
-        max_j = None
+        max_j = 0
         for j in range(K):
-            value = C[i]/D[i] - (y[j].solution_value() - c1[j])/D[i]
+            value = C[i]/D[i] - (c1[j]/D[i])
             if value > max_value:
                 max_value = value
                 max_j = j
