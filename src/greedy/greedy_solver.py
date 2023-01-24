@@ -82,16 +82,19 @@ def main():
     # Set objective function to maximize the total value of delivered goods
     # Add objective function
     objective = solver.Objective()
+    objective.SetMaximization()
     for i in range(N):
         for j in range(K):
             objective.SetCoefficient(x[i][j], C[i])
-    objective.SetMaximization()
-
-    # Solve the problem
     solver.Solve()
-    # Print the solution
-    solver.Solve()
-    print("Solution:")
+    
+    for i in range(N):
+        for j in range(K):
+            print(f'x[{i}][{j}] = {x[i][j].solution_value()}')
+    for j in range(K):
+        print(f'y[{j}] = {y[j].solution_value()}')
+    print(f'Total value of delivered goods: {objective.Value()}')
+    
     for j in range(K):
         print(f"Truck {j} delivers {y[j].solution_value()} goods")
     '''
