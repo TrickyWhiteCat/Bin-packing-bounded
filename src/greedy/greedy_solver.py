@@ -15,17 +15,11 @@ def CreatDataModel(filename,N,K,MaxQ,MinC,MaxC):
     x = [randint(0,K) for i in range(N)]
     # The Order i is transported by Truck x[i]
 
-    load = [0 for i in range(K)]
-
     c1 = [0 for i in range(K)]
     c2 = [0 for i in range(K)]
 
-
     for k in range(K):
-        for i in range(N):
-            if x[i] == k:
-                load[k] = load[k] + D[i] # The minimal load for truck k
-        c1[k] = load[k]
+        c1[k] = D[k]
         c2[k] = c1[k] + randint(0,40)
     
     for k in range(K):
@@ -67,10 +61,6 @@ def main():
     customers = [(i, C[i]/D[i]) for i in range(N)]
     customers.sort(key=lambda x: -x[1])
 
-    # Set initial value for y[j] to c1[j]
-    for j in range(K):
-        solver.Add(y[j] == c1[j])
-
     # For each customer i, select the truck j that maximizes c[i]/d[i] - (y[j] - c1[j])/d[i]
     for i, _ in customers:
         max_value = -1
@@ -80,10 +70,17 @@ def main():
             if value > max_value:
                 max_value = value
                 max_j = j
-        solver.Add(x[i][max_j] == D[i])
-        solver.Add(y[max_j] == y[max_j] + D[i])
+        # Add constraint: x[i][j] <= D[i]
+        solver.Add(x[i][max_j] <= D[i])
+    
+        # Add constraint: x[i][j] <= y[j]
+        solver.Add(x[i][max_j] <= y[max_j])
+    
+        # Add constraint: y[j] <= c2[j]
+        solver.Add(y[max_j] <= c2[max_j])
 
     # Set objective function to maximize the total value of delivered goods
+    # Add objective function
     objective = solver.Objective()
     for i in range(N):
         for j in range(K):
@@ -93,13 +90,10 @@ def main():
     # Solve the problem
     solver.Solve()
     # Print the solution
-    print(f'Total value of delivered goods: {objective.Value()}')
-    for i in range(N):
-        for j in range(K):
-            if x[i][j].solution_value() > 0: # only print non-zero values
-                print(f'x[{i}][{j}] = {x[i][j].solution_value()}')
+    solver.Solve()
+    print("Solution:")
     for j in range(K):
-        print(f'y[{j}] = {y[j].solution_value()}')
+        print(f"Truck {j} delivers {y[j].solution_value()} goods")
     '''
     # Check if the solution is optimal
     if solver.VerifySolution(1e-7, True):
