@@ -54,7 +54,7 @@ def Input(filename):
 
 def main():
     # CreatDataModel('Proj_17.txt',10,3,10,5,10)
-    N,K,D,C,c1,c2 = Input('12.txt')
+    N,K,D,C,c1,c2 = Input('1.txt')
     solver = pywraplp.Solver.CreateSolver('SCIP')
     if not solver:
         return

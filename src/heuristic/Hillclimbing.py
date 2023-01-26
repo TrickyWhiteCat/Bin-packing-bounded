@@ -57,6 +57,7 @@ class Solver:
     def __init__(self,input_file,*args):
         super().__init__(*args)
         self.__input_file=input_file
+
     def __read_input(self):
         if self.__input_file is None:
             raise(f"No input file was specified!")
@@ -93,6 +94,7 @@ class Solver:
 
         self.__lower_bound = lower_bound
         self.__upper_bound = upper_bound
+
     def create_constraints(self, matrix:np):
         self.__read_input()
         num_customers=self.num_customers
@@ -105,20 +107,16 @@ class Solver:
         lower_bound=self.__lower_bound
         upper_bound=self.__upper_bound 
         
-        real_weight_matrix=np.dot(quantity,matrix)
-        print(real_weight_matrix)
-        for i,weight in enumerate(real_weight_matrix):
+        real_load_matrix=np.dot(quantity,matrix)
+        #print(real_load_matrix)
+        for i,weight in enumerate(real_load_matrix):
             if  weight > upper_bound[i] or weight < lower_bound[i]:
                 return False
         return True
-        # for truck in range(num_trucks):
-        #     sum=0
-        #     for customer in 
-        
-        
     
     def create_initial_state(self):
         self.__read_input()
+
         num_customers=self.num_customers
         num_trucks=self.num_trucks
 
@@ -129,46 +127,67 @@ class Solver:
         lower_bound=self.__lower_bound
         upper_bound=self.__upper_bound 
         
-        customer_rate=[(i,value[i]/quantity[i]) for i in range(num_customers)]
-        customer_rate.sort(key=lambda x: -x[1])
+        customer_rate=[(i, value[i]) for i in range(num_customers)]
+        customer_rate.sort(key=lambda x: -x[1]) # Sort giam dan
+
         truck_rate=[(i,upper_bound[i]) for i in range(num_trucks)]
         truck_rate.sort(key=lambda x: -x[1])
-        print(customer_rate)
+
         matrix=np.zeros((num_customers,num_trucks))
         
-        real_weight=[0 for truck in range(num_trucks)]
+        real_load=[0 for truck in range(num_trucks)]
         
-        for pair in customer_rate:
-            r=pair[0]
-            q_customer=quantity[r]
-            v_customer=value[r]
+        for idx, rate in customer_rate:
+
+            q_customer=quantity[idx]
+            v_customer=value[idx]
             
+            # Nhet du lower
+            for t in truck_rate: # Chon xe
+                truck=t[0]
+                lower=lower_bound[truck]
+                upper=upper_bound[truck]
+
+                if real_load[truck] < lower and real_load[truck] + q_customer <= upper: # nhet du lower da
+                    real_load[truck] += q_customer
+                    matrix[idx][truck]=1
+                    break
+
+        # Toi day la co du lower bound r, phai check xem hang dc nhet vao xe chua, chua dc nhet thi minh nhet vao
+        for idx, rate in customer_rate:
+            if matrix[idx].sum() > 0:
+                continue
+            q_customer=quantity[idx]
+            
+            # Nhet du lower
+            #print(f"{q_customer=}")
+            for t in truck_rate: # Chon xe
+                truck=t[0]
+                lower=lower_bound[truck]
+                upper=upper_bound[truck]
+
+                #print(f"Truck {truck} load: {real_load[truck]}, upper bound: {upper}, diff: {upper - real_load[truck]}")
+                if real_load[truck] + q_customer <= upper: # nhet vua xe
+                    real_load[truck] += q_customer
+                    matrix[idx][truck]=1
+                    break
+
             for t in truck_rate:
                 truck=t[0]
                 lower=lower_bound[truck]
                 upper=upper_bound[truck]
-                
-                if q_customer <= lower or lower <= q_customer <= upper:
-                    if real_weight[truck] <= lower or lower <= real_weight[truck] <=upper :
-                        real_weight[truck] +=q_customer
-                        matrix[r][truck]=1
-                        if  lower <= real_weight[truck] <=upper:
-                            break
-                        if real_weight[truck] <= lower:
-                                break
-                        else: 
-                            real_weight[truck]-=q_customer
-                            matrix[r][truck]=0
+                print(f"Truck {truck} load: {real_load[truck]}, upper bound: {upper}, lower bound: {lower}, diff: {real_load[truck] - lower}")
         
-        # s=sum([value[i] for i in range(num_customers) if matrix[i][:].sum() ])
-        
+        print(f"Number of goods delivered: {int(matrix.sum())}/{self.num_customers}")
+        print(f"Total goods' values: {(matrix.T @ np.array(value)).sum()}")
+
         return matrix
     
     
 solver=Solver(input_file='1.txt')
 ma=solver.create_initial_state()
 d=solver.create_constraints(ma)
-print(d)
+#print(d)
    
                     
                     
