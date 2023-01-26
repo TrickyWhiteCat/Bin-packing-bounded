@@ -57,10 +57,3 @@ if __name__ == "__main__":
                   MAX_Q=10,
                   MIN_C=5,
                   MAX_C=10)
-
-
-
-
-
-
-
