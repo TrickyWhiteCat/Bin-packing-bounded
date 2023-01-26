@@ -1,8 +1,11 @@
 import logging
 import time
 
-
-from greedy import GreedySolver
+import os
+if __name__ == "__main__":
+    from greedy import GreedySolver
+else:
+    from .greedy import GreedySolver
 
 from ortools.sat.python import cp_model
 
@@ -53,8 +56,9 @@ class CPSolver:
     def __read_input(self):
         self.__logger.info(f"Trying to read input...")
         if self.__input_file is None:
-            self.__logger.error(f"No input file was specified!")
-            raise(f"No input file was specified!")
+            err_msg = f"No input file was specified!"
+            self.__logger.error(err_msg)
+            raise(err_msg)
         try:
             self.__logger.info(f"Opening {self.__input_file}...")
             with open(self.__input_file, "r") as inp_file:
@@ -101,7 +105,7 @@ class CPSolver:
 
     def __create_variables(self):
 
-        self.__logger.info(f"Prepare to create {self.num_customers * self.num_trucks} variables...")
+        self.__logger.info(f"Preparing to create {self.num_customers * self.num_trucks} variables...")
         self.__logger.info(f"Creating variables...")
 
         self.__weights = []
@@ -152,44 +156,48 @@ class CPSolver:
             self.__logger.info(f"use_greedy flag was set to True. Attempting to use Greedy Solver to get initial solution...")
             # Call greedy and get its solution
             greedy_solver = GreedySolver(input_file=self.__input_file)
-            initial_sol = greedy_solver.solve().T.astype(int) # Initially a matrix of size num_customers x num_trucks. Need to be transposed to be the same shape as ours.
-            self.__logger.info(f"Initial solution was get.")
-            hint = initial_sol.flatten()
-            self.__logger.info(f"Adding initial solution...")
-            [self.__model.AddHint(var=var, value=hint[idx]) for idx, var in enumerate(self.__variables)]
-            self.__logger.info(f"Done")
+            greedy_sol = greedy_solver.solve()
+            if greedy_sol is not None:
+                initial_sol = greedy_sol.T.flatten().astype(int) # Initially a matrix of size num_customers x num_trucks. Need to be transposed to be the same shape as ours.
+                self.__logger.info(f"Initial solution was get.")
+                self.__logger.info(f"Adding initial solution...")
+                [self.__model.AddHint(var=var, value=initial_sol[idx]) for idx, var in enumerate(self.__variables)]
+                self.__logger.info(f"Done")
 
         solver = cp_model.CpSolver()
 
         if self.__time_limit:
             solver.parameters.max_time_in_seconds = self.__time_limit
-        self.__logger.info(f"Timelimit was set to {self.__time_limit}")
+        self.__logger.info(f"Time limit was set to {self.__time_limit}")
 
         solution_callback = SolutionCallback(variables=self.__variables, time_limit=self.__time_limit)
-        if self.use_greedy:
+        if self.use_greedy and greedy_sol is not None:
             solution_callback.solution = initial_sol
-            self.objective_value = greedy_solver.objective_value
 
         self.__logger.info(f"Solving with ortools' CpSolver...")
         status = solver.Solve(model=self.__model, solution_callback=solution_callback)
-        if status == cp_model.OPTIMAL or cp_model.FEASIBLE:
-            self.__logger.info(f"Solution was get.")
-            self.num_deliver_packages = sum(solution_callback.solution)
-            
-            # Reshape the solution into a K x N one hot matrix
-            solution = []
-            for truck_idx in range(self.num_trucks):
-                solution.append(solution_callback.solution[truck_idx * self.num_customers: (truck_idx+1) * self.num_customers])
-                self.solution = solution
-                self.objective_value = solver.ObjectiveValue()
-        else:
+        if solution_callback.solution is None:
             self.__logger.error(f"No solution found!")
-            raise(Exception(f"No solution found!"))
+            return None
 
-    @property
+        if status == cp_model.UNKNOWN:
+            self.__logger.error(f"No solution found using Ortools' CpSolver")
+            self.objective_value = greedy_solver.objective_value
+        elif status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+            self.__logger.info(f"Solution was get.")
+            self.objective_value = solution_callback.ObjectiveValue()
+            
+        self.num_deliver_packages = sum(solution_callback.solution)
+        
+        # Reshape the solution into a K x N one hot matrix
+        solution = []
+        for truck_idx in range(self.num_trucks):
+            solution.append(solution_callback.solution[truck_idx * self.num_customers: (truck_idx+1) * self.num_customers])
+        return solution
+
     def plan(self):
         '''Return which goods will be delivered by which truck'''
-        self.solve()
+        self.solution = self.solve()
         plan = []
         for weight in self.solution:
             on_this_truck = []
@@ -198,14 +206,14 @@ class CPSolver:
                     on_this_truck.append(index + 1)
             plan.append(on_this_truck)
 
-        string_plan = "\n".join([f"- Truck {idx+1} contains goods of {len(plan[idx])} customers: {', '.join([str(val) for val in on_this_truck])}" for idx, on_this_truck in enumerate(plan)])
+        string_plan = "\n\n".join([f"- Truck {idx+1} contains goods of {len(plan[idx])} customers: {', '.join([str(val) for val in on_this_truck])}" for idx, on_this_truck in enumerate(plan)])
         res = f"With the maximum total values of {int(self.objective_value)}/{self.total_value}, we deliver {self.num_deliver_packages}/{self.num_customers} packages with the plan below: \n{string_plan}"
         return res
 
 def main():
     logging.basicConfig(level=logging.INFO)
     solver = CPSolver(input_file="1.txt", use_greedy=True)
-    print(solver.plan)
+    print(solver.plan())
 
 
 if __name__ == "__main__":

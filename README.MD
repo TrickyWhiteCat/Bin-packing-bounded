@@ -9,7 +9,7 @@ There exist N customers 1, 2,..., N where customer `i` ordered `d[i]` quantity o
 - The total values of delivered goods must be maximized.
 
 ## Algorithm
-- [ ] Greedy
-- [ ] Integer Linear Programming (ILP)
+- [x] Greedy
+- [x] Integer Linear Programming (ILP)
 - [x] Constraint Programming (CP)
 - [ ] Heuristic - constraint based local search

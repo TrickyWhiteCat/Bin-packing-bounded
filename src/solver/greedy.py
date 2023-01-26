@@ -12,15 +12,17 @@ class GreedySolver:
     def __read_input(self):
         self.__logger.info(f"Trying to read input...")
         if self.__input_file is None:
-            self.__logger.error(f"No input file was specified!")
-            raise(f"No input file was specified!")
+            err_msg = f"No input file was specified!"
+            self.__logger.error(err_msg)
+            raise(err_msg)
         try:
             self.__logger.info(f"Opening {self.__input_file}...")
             with open(self.__input_file, "r") as inp_file:
                 lines = inp_file.readlines()
         except FileNotFoundError:
-            self.__logger.info(f"File {self.__input_file} is invalid!")
-            raise(FileNotFoundError(f"File {self.__input_file} is invalid!"))
+            err_msg = f"File {self.__input_file} is invalid!"
+            self.__logger.info(err_msg)
+            raise(FileNotFoundError(err_msg))
     
         self.__logger.info(f"Processing input...")
         # Process input into data
@@ -58,12 +60,15 @@ class GreedySolver:
 
         self.__logger.info("Input was processed")
 
+    def __add_goods(self, prioritize: str = "quantity"):
+        if prioritize == "quantity":
+            customer_rate=[(i, self.__quantity[i]) for i in range(self.num_customers)]
+        if prioritize == "value":
+            customer_rate=[(i, self.__value[i]) for i in range(self.num_customers)]
+        if prioritize == "efficiency":
+            customer_rate=[(i, self.__value[i]/self.__quantity[i]) for i in range(self.num_customers)]
 
-    def solve(self):
-        self.__read_input()
-        
         self.__logger.info("Sorting customers...")
-        customer_rate=[(i, self.__value[i]) for i in range(self.num_customers)]
         customer_rate.sort(key=lambda x: -x[1]) # Sort giam dan theo value
         self.__logger.info("Done")
 
@@ -96,8 +101,9 @@ class GreedySolver:
         self.__logger.info(f"Checking lower bound condition...")
         for truck_idx, rate in truck_rate:
             if real_load[truck_idx] < self.__lower_bound[truck_idx]:
-                self.__logger.error(f"Truck {truck_idx} with lower bound {self.__lower_bound[truck_idx]} only contains {real_load[truck_idx]} packages")
-                raise ValueError(f"Truck {truck_idx} with lower bound {self.__lower_bound[truck_idx]} only contains {real_load[truck_idx]} packages")
+                err_msg = f"Truck {truck_idx} with lower bound {self.__lower_bound[truck_idx]} only contains {real_load[truck_idx]} packages"
+                self.__logger.error(err_msg)
+                raise ValueError(err_msg)
         self.__logger.info(f"Condition satisfied.")
         
 
@@ -120,23 +126,59 @@ class GreedySolver:
                     break
             
         self.__logger.info(f"Done")
+
+        return goods_pos
+
+
+    def solve(self):
+        self.__read_input()
+
+        goods_pos = None
+        for key in ["efficiency", "value", "quantity"]:
+            try:
+                self.__logger.info(f"Trying to use greedy algorithm with packages sorted by {key}")
+                goods_pos = self.__add_goods(prioritize=key)
+                break
+            except ValueError:
+                self.__logger.error(f"Fail when using greedy algorithm with packages sorted by {key}")
+
+        if goods_pos is None: # No solution found using all keys
+            self.__logger.fatal(f"Fail to use greedy algorithm.")  
+            return None
+
         self.__logger.info(f"Solution was get")
+        self.solution = goods_pos
         self.__truck_values = (goods_pos.T @ np.array(self.__value)).astype(int)
+        self.__real_load = (goods_pos.T @ np.array(self.__quantity)).astype(int)
         self.objective_value = self.__truck_values.sum()
         self.num_deliver_packages = int(goods_pos.sum())
 
         for truck_idx in range(self.num_trucks):
-            self.__logger.info(f"Truck {truck_idx+1}: Bounds: [{self.__lower_bound[truck_idx]}, {self.__upper_bound[truck_idx]}], Load: {real_load[truck_idx]}, Goods values: {self.__truck_values[truck_idx]}")
+            self.__logger.info(f"Truck {truck_idx+1}: Bounds: [{self.__lower_bound[truck_idx]}, {self.__upper_bound[truck_idx]}], Load: {self.__real_load[truck_idx]}, Goods values: {self.__truck_values[truck_idx]}")
 
         self.__logger.info(f"Number of goods delivered: {int(goods_pos.sum())}/{self.num_customers}")
         self.__logger.info(f"Total goods' values: {self.objective_value}")
 
-        return goods_pos
-    
+        return goods_pos.T
+
+    def plan(self):
+        self.solution = self.solve()
+        plan = []
+        for weight in self.solution:
+            on_this_truck = []
+            for index, elem in enumerate(weight):
+                if elem == 1:
+                    on_this_truck.append(index + 1)
+            plan.append(on_this_truck)
+
+        string_plan = "\n\n".join([f"- Truck {idx+1} contains goods of {len(plan[idx])} customers: {', '.join([str(val) for val in on_this_truck])}" for idx, on_this_truck in enumerate(plan)])
+        res = f"With the maximum total values of {int(self.objective_value)}/{self.total_value}, we deliver {self.num_deliver_packages}/{self.num_customers} packages with the plan below: \n{string_plan}"
+        return res
+
 def main():
     logging.basicConfig(level=logging.INFO)
-    solver=GreedySolver(input_file='1.txt')
-    mat=solver.solve()
+    solver = GreedySolver(input_file='12.txt')
+    solution = solver.solve()
 
 if __name__ == "__main__":
     main()
