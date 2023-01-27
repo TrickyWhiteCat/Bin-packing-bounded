@@ -72,7 +72,7 @@ class GreedySolver:
         customer_rate.sort(key=lambda x: -x[1]) # Sort giam dan theo value
         self.__logger.info("Done")
 
-        self.__logger.info("Sorting customers...")
+        self.__logger.info("Sorting trucks by lower bounds...")
         truck_rate=[(i, self.__lower_bound[i]) for i in range(self.num_trucks)]
         truck_rate.sort(key=lambda x: -x[1])
         self.__logger.info("Done")

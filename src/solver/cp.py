@@ -44,7 +44,7 @@ class CPSolver:
     - `time_limit`: the amount of time allowed for the solver
     """
 
-    def __init__(self, input_file: str = None, time_limit = None, use_greedy = False, logger = None, *args):
+    def __init__(self, input_file: str = None, time_limit = None, use_greedy = False, logger = None, *args, **kwargs):
         self.__input_file = input_file
         if logger is None:
             logger = logging.getLogger("CPSolver")
@@ -52,6 +52,11 @@ class CPSolver:
         self.__model = cp_model.CpModel()
         self.__time_limit = time_limit
         self.use_greedy = use_greedy
+
+        try:
+            self.__log_cp_sat_process = kwargs["log_cpsolver_process"]
+        except KeyError:
+            self.__log_cp_sat_process = False
 
     def __read_input(self):
         self.__logger.info(f"Trying to read input...")
@@ -111,7 +116,7 @@ class CPSolver:
         self.__weights = []
         self.__variables = []
         for truck_idx in range(self.num_trucks):
-            weight = [self.__model.NewIntVar(lb = 0, ub = 1, name=f"{truck_idx} {customer_idx}") for customer_idx in range(self.num_customers)]
+            weight = [self.__model.NewIntVar(lb = 0, ub = 1, name="") for customer_idx in range(self.num_customers)]
             self.__variables.extend(weight)
             self.__weights.append(weight)
 
@@ -125,8 +130,7 @@ class CPSolver:
         self.__logger.info(f"Creating constraints about the loads of trucks must be between lower bound and upper bound...")
         for truck_idx in range(self.num_trucks):
             weight = self.__weights[truck_idx]
-            self.__model.AddLinearConstraint(linear_expr=sum([weight[idx] * self.__quantity[idx] 
-                                                              for idx in range(self.num_customers)]),
+            self.__model.AddLinearConstraint(linear_expr=cp_model.LinearExpr.WeightedSum(expressions=weight, coefficients=self.__quantity),
                                              lb=self.__lower_bound[truck_idx],
                                              ub=self.__upper_bound[truck_idx])
         self.__logger.info(f"Done")
@@ -134,14 +138,13 @@ class CPSolver:
         # For each customer, only 1 truck contains his/her goods
         self.__logger.info(f"Creating constraints about goods of each customers must be stored on only 1 truck...")
         for customer_idx in range(self.num_customers):
-            self.__model.Add(sum([weight[customer_idx] for weight in self.__weights]) <= 1)
+            self.__model.Add(cp_model.LinearExpr.Sum([weight[customer_idx] for weight in self.__weights]) <= 1)
 
         self.__logger.info(f"Done")
 
         self.__logger.info("Adding the expression to be maximized...")
         # Add the expression to be maximized: Maximize the total ordered goods' values
-        self.__model.Maximize(sum([sum([weight[idx] * self.__value[idx] for idx in range(self.num_customers)]) 
-                                    for weight in self.__weights]))
+        self.__model.Maximize(cp_model.LinearExpr.Sum([cp_model.LinearExpr.WeightedSum(expressions=weight, coefficients=self.__value) for weight in self.__weights]))
         self.__logger.info(f"Done")
         self.__logger.info(f"Constraints were created")
 
@@ -158,7 +161,7 @@ class CPSolver:
             greedy_solver = GreedySolver(input_file=self.__input_file)
             greedy_sol = greedy_solver.solve()
             if greedy_sol is not None:
-                initial_sol = greedy_sol.T.flatten().astype(int) # Initially a matrix of size num_customers x num_trucks. Need to be transposed to be the same shape as ours.
+                initial_sol = greedy_sol.flatten().astype(int) # Initially a matrix of size num_customers x num_trucks. Need to be transposed to be the same shape as ours.
                 self.__logger.info(f"Initial solution was get.")
                 self.__logger.info(f"Adding initial solution...")
                 [self.__model.AddHint(var=var, value=initial_sol[idx]) for idx, var in enumerate(self.__variables)]
@@ -170,6 +173,8 @@ class CPSolver:
             solver.parameters.max_time_in_seconds = self.__time_limit
         self.__logger.info(f"Time limit was set to {self.__time_limit}")
 
+        solver.parameters.num_workers = 1 # Use all cores to search=
+        solver.parameters.log_search_progress = self.__log_cp_sat_process
         solution_callback = SolutionCallback(variables=self.__variables, time_limit=self.__time_limit)
         if self.use_greedy and greedy_sol is not None:
             solution_callback.solution = initial_sol

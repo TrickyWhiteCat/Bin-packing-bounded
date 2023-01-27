@@ -14,15 +14,15 @@ def main():
     data_path = "data.txt"
 
     generate_data(filename=data_path,
-                  N = 200,
-                  K = 20,
+                  N = 2000,
+                  K = 50,
                   MAX_Q=10,
                   MIN_C=5,
                   MAX_C=10)
 
     # Initialize solvers
     greedy_solver = GreedySolver(input_file=data_path)
-    cp_solver = CPSolver(input_file=data_path, time_limit=10, use_greedy=True)
+    cp_solver = CPSolver(input_file=data_path, use_greedy=True, time_limit=10, log_cp_sat_process = False)
     ilp_solver = ILPSolver(input_file=data_path)
 
     # Test all solver
@@ -34,5 +34,5 @@ def main():
         print(f"Execution time: {time.time() - start:.2f}s\n")
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, filename="main.log", filemode="w") # Head to this file to see the full log.
+    logging.basicConfig(level=logging.INFO) # Head to this file to see the full log.
     main()
