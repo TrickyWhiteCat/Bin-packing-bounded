@@ -95,4 +95,5 @@ def main(N:int = None, K:int = None):
  
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, filename="test.log", filemode="w") # Head to this file to see the full log.
-    main(20, 5)
+    main(100, 50)
+    main(1000, 100)
