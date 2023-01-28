@@ -5,6 +5,7 @@ setup(required)
 
 import logging
 import time
+import os
 
 from src import GreedySolver, CPSolver, ILPSolver
 from data_generator import generate_data
@@ -56,29 +57,42 @@ def create_heading(prefix:str = None): # Helper function
         prefix += "_"
     return f"{prefix}value_rate,{prefix}deliver_rate,{prefix}exec_time"
 
-def main():
+def main(N:int = None, K:int = None):
     num_trials = 100
-    N = 1000
-    K = 100
+    if N is None or K is None:
+        N = 1000
+        K = 50
     time_limit = 60
 
     data_path = f"data_{N}_{K}.txt"
     result_file = f"result_{N}_{K}.csv"
 
-    with open(result_file, "w") as res_file:
-        # Write headline
-        solver_names = ["greedy", "cp", "ilp", "cp_greedy"]
-        for key in solver_names:
-            res_file.write(f"{create_heading(key)},")
-        res_file.write("\n")
+    times_tested = 0
+    if result_file in os.listdir():
+        with open (result_file, "r") as res_file:
+            times_tested = len(res_file.readlines()) - 1
+        if times_tested < 1:
+            create_new_file = True
+        else:
+            create_new_file = False
+    else:
+        create_new_file = True
 
-    for trial in range(num_trials):
-        print(f"Trial {trial}/{num_trials}", end="\r")
+    if create_new_file:
+        with open(result_file, "w") as res_file:
+            # Write headline
+            solver_names = ["greedy", "cp", "ilp", "cp_greedy"]
+            for key in solver_names:
+                res_file.write(f"{create_heading(key)},")
+            res_file.write("\n")
+
+    for trial in range(times_tested, num_trials):
+        print(f"Trial {trial + 1}/{num_trials}", end="\r")
 
         test(N=N, K=K, time_limit=time_limit, data_path=data_path, result_file=result_file)
 
     print(f"Testing {num_trials} times with {N = }, {K = } was done.")
-
+ 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, filename="test.log", filemode="w") # Head to this file to see the full log.
-    main()
+    main(20, 5)
