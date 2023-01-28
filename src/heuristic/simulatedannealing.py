@@ -182,7 +182,7 @@ class Solver:
         initial_temperature = 100
         cooling = 0.7  # cooling coefficient
         number_variables = 2
-        computing_time = 30 # second(s)
+        computing_time = 60 # second(s)
         
         # Simulated Annealing Algorithm:
         if not self.check_constraints(matrix):
@@ -243,7 +243,7 @@ ma=solver.create_initial_state()
 mm=solver.simulated_annealing(ma)
 t2=time.time()
 print(t2-t1)
-   
+
                     
                     
                     
