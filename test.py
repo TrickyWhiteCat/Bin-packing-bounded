@@ -58,8 +58,8 @@ def create_heading(prefix:str = None): # Helper function
 
 def main():
     num_trials = 100
-    N = 10
-    K = 50
+    N = 1000
+    K = 100
     time_limit = 60
 
     data_path = f"data_{N}_{K}.txt"
@@ -69,12 +69,12 @@ def main():
         # Write headline
         solver_names = ["greedy", "cp", "ilp", "cp_greedy"]
         for key in solver_names:
-            res_file.write(create_heading(key))
+            res_file.write(f"{create_heading(key)},")
         res_file.write("\n")
 
     for trial in range(num_trials):
         print(f"Trial {trial}/{num_trials}", end="\r")
-        
+
         test(N=N, K=K, time_limit=time_limit, data_path=data_path, result_file=result_file)
 
     print(f"Testing {num_trials} times with {N = }, {K = } was done.")
