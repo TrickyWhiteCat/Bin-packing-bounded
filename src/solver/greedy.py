@@ -58,6 +58,9 @@ class GreedySolver:
         self.__lower_bound = lower_bound
         self.__upper_bound = upper_bound
 
+        self.objective_value = 0
+        self.num_deliver_packages = 0
+
         self.__logger.info("Input was processed")
 
     def __add_goods(self, prioritize: str = "quantity"):
@@ -154,15 +157,17 @@ class GreedySolver:
         self.num_deliver_packages = int(goods_pos.sum())
 
         for truck_idx in range(self.num_trucks):
-            self.__logger.info(f"Truck {truck_idx+1}: Bounds: [{self.__lower_bound[truck_idx]}, {self.__upper_bound[truck_idx]}], Load: {self.__real_load[truck_idx]}, Goods values: {self.__truck_values[truck_idx]}")
+            self.__logger.debug(f"Truck {truck_idx+1}: Bounds: [{self.__lower_bound[truck_idx]}, {self.__upper_bound[truck_idx]}], Load: {self.__real_load[truck_idx]}, Goods values: {self.__truck_values[truck_idx]}")
 
-        self.__logger.info(f"Number of goods delivered: {int(goods_pos.sum())}/{self.num_customers}")
+        self.__logger.info(f"Number of goods delivered: {self.num_deliver_packages}/{self.num_customers}")
         self.__logger.info(f"Total goods' values: {self.objective_value}")
 
         return goods_pos.T
 
     def plan(self):
         self.solution = self.solve()
+        if self.solution is None:
+            return f"No solution found"
         plan = []
         for weight in self.solution:
             on_this_truck = []
@@ -182,16 +187,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-   
-                    
-                    
-                    
-        
-
-
-
-
-
-
-
-

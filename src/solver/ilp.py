@@ -24,15 +24,29 @@ def Input(filename):
     return N,K,D,C,c1,c2
 
 class ILPSolver:
-    def __init__(self, input_file: str = None, logger = None, *args):
+    def __init__(self, input_file: str = None, time_limit:int = None, logger = None, *args):
         self.__input_file = input_file
         if logger is None:
-            logger = logging.getLogger("CPSolver")
+            logger = logging.getLogger("ILPSolver")
         self.__logger = logger
+        self.solution = None
+        self.objective_value = 0
+        self.num_deliver_packages = 0
+        self.__time_limit = time_limit
 
     def solve(self):
+        self.__logger.info("Solving...")
+        self.__logger.info("Reading input...")
         N,K,D,C,c1,c2 = Input(self.__input_file)
+        self.num_customers = N
+        self.num_trucks = K
+        self.total_value = sum(C)
+        self.__logger.info("Done")
+        self.__logger.info("Ortools' solver was created")
         solver = pywraplp.Solver.CreateSolver('SCIP')
+        if self.__time_limit is not None:
+            solver.SetTimeLimit(1000*self.__time_limit)
+            self.__logger.info(f"Time limit was set to {self.__time_limit}")
         if not solver:
             return
         
@@ -60,33 +74,50 @@ class ILPSolver:
                 obj.append(x[i][j] * C[i])
         solver.Maximize(sum(obj))
 
+        self.__logger.info("Solving using Ortools' SCIP...")
         status = solver.Solve()
     
-        if status == pywraplp.Solver.OPTIMAL or pywraplp.Solver.FEASIBLE:
+        if status == pywraplp.Solver.OPTIMAL or status == pywraplp.Solver.FEASIBLE:
+            self.__logger.info("Solution was get")
+            self.objective_value = solver.Objective().Value()
         
-            on_this_truck = [[] for j in range(K)]
             order_delivered = 0
-    
+
+            solution = []
             for i in range(N):
+                line = []
                 for j in range(K):
-                    if int(x[i][j].solution_value()) == 1:
-                        on_this_truck[j].append(i)
+                    x_i_j = int(x[i][j].solution_value())
+                    line.append(x_i_j)
+                    if x_i_j == 1:
                         order_delivered += 1
-    
-            print('Integer Linear Program Solution:')
-            print('With the maximum total values of {}/{}, we deliver {}/{} packages with the plan below:'.format(int(solver.Objective().Value()),sum(C),order_delivered,N))
-            for j in range(K):
-                print('\n- Truck {} contains goods of {} customers: {}'.format(j+1,len(on_this_truck[j]),', '.join([str(x+1) for x in on_this_truck[j]])))
-        else:
-            print('No Solution!')
+                solution.append(line)
+
+            self.num_deliver_packages = order_delivered
+            import numpy as np
+            self.solution = np.array(solution).T
+            
+        return self.solution
 
     def plan(self):
-        "Alias for consistency between solvers"
-        self.solve()
+        self.solution = self.solve()
+        if self.solution is None:
+            return f"No solution found"
+        plan = []
+        for weight in self.solution:
+            on_this_truck = []
+            for index, elem in enumerate(weight):
+                if elem == 1:
+                    on_this_truck.append(index + 1)
+            plan.append(on_this_truck)
+
+        string_plan = "\n\n".join([f"- Truck {idx+1} contains goods of {len(plan[idx])} customers: {', '.join([str(val) for val in on_this_truck])}" for idx, on_this_truck in enumerate(plan)])
+        res = f"With the maximum total values of {int(self.objective_value)}/{self.total_value}, we deliver {self.num_deliver_packages}/{self.num_customers} packages with the plan below: \n{string_plan}"
+        return res
 
 def main():
-    solver = ILPSolver(input_file="1.txt")
-    solver.solve()
+    solver = ILPSolver(input_file="1.txt", time_limit=10)
+    print(solver.plan())
 
 if __name__ == '__main__':
     main()

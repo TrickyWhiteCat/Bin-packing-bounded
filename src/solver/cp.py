@@ -155,6 +155,9 @@ class CPSolver:
         self.__create_variables()
         self.__create_constraints()
 
+        self.objective_value = 0
+        self.num_deliver_packages = 0
+
         if self.use_greedy:
             self.__logger.info(f"use_greedy flag was set to True. Attempting to use Greedy Solver to get initial solution...")
             # Call greedy and get its solution
@@ -173,7 +176,7 @@ class CPSolver:
             solver.parameters.max_time_in_seconds = self.__time_limit
         self.__logger.info(f"Time limit was set to {self.__time_limit}")
 
-        solver.parameters.num_workers = 1 # Use all cores to search=
+        solver.parameters.num_workers = 0 # Use all cores to search
         solver.parameters.log_search_progress = self.__log_cp_sat_process
         solution_callback = SolutionCallback(variables=self.__variables, time_limit=self.__time_limit)
         if self.use_greedy and greedy_sol is not None:
@@ -203,6 +206,8 @@ class CPSolver:
     def plan(self):
         '''Return which goods will be delivered by which truck'''
         self.solution = self.solve()
+        if self.solution is None:
+            return f"No solution found"
         plan = []
         for weight in self.solution:
             on_this_truck = []

@@ -14,8 +14,8 @@ def main():
     data_path = "data.txt"
 
     generate_data(filename=data_path,
-                  N = 2000,
-                  K = 50,
+                  N = 5000,
+                  K = 10,
                   MAX_Q=10,
                   MIN_C=5,
                   MAX_C=10)
@@ -23,7 +23,7 @@ def main():
     # Initialize solvers
     greedy_solver = GreedySolver(input_file=data_path)
     cp_solver = CPSolver(input_file=data_path, use_greedy=True, time_limit=10, log_cp_sat_process = False)
-    ilp_solver = ILPSolver(input_file=data_path)
+    ilp_solver = ILPSolver(input_file=data_path, time_limit=10)
 
     # Test all solver
     for solver in [greedy_solver, cp_solver, ilp_solver]:
