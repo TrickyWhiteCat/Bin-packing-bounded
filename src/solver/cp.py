@@ -54,7 +54,7 @@ class CPSolver:
         self.use_greedy = use_greedy
 
         try:
-            self.__log_cp_sat_process = kwargs["log_cpsolver_process"]
+            self.__log_cp_sat_process = kwargs["log_cp_sat_process"]
         except KeyError:
             self.__log_cp_sat_process = False
 

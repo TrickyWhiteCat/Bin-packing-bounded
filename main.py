@@ -14,8 +14,8 @@ def main():
     data_path = "data.txt"
 
     generate_data(filename=data_path,
-                  N = 5000,
-                  K = 10,
+                  N = 50,
+                  K = 5,
                   MAX_Q=10,
                   MIN_C=5,
                   MAX_C=10)
@@ -34,5 +34,5 @@ def main():
         print(f"Execution time: {time.time() - start:.2f}s\n")
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO) # Head to this file to see the full log.
+    logging.basicConfig(level=logging.INFO, filename="main.log", filemode="w") # Head to this file to see the full log.
     main()
