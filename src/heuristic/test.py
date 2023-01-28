@@ -75,26 +75,44 @@
 #         break
 # plt.plot(record_best_fitness)
 # plt.show()
-a=[0]*3
-lst=[a[:]]
-for i in range(3):
-    b=a[:]
-    a[i]=1
-    lst.append(a)
-    a=b
-print(lst)
-import random
+# a=[0]*3
+# lst=[a[:]]
+# for i in range(3):
+#     b=a[:]
+#     a[i]=1
+#     lst.append(a)
+#     a=b
+# print(lst)
+# import random
 
 mylist = ["apple", "banana", "cherry"]
 
-print(random.choice(mylist))
-import numpy as np
-arr = np.array([2,4,5,7,9])
-arr1 = np.array([2,4,5,7,53])
 
-# Using == operator and all() method
-print((arr == arr1).all())
+# print(random.choice(mylist))
+import numpy as np
+# arr = np.array([2,4],[7,9],[3,4])
+# arr1 = np.array([1,3],[5,7],[5,3])
+# print(np.concatenate((arr,arr1),axis=0))
+a = [[1, 2], [3, 4]]
+a.remove([1,2])
+b = np.array([[5, 6]])
+# print(np.concatenate((a[:1], b),axis=0))
+b=[tuple(i) for i in a]# same shape, add along axis 1
+se=set()
+se.add(tuple(b))
+mm=np.array(tuple(b))
+# for i in [a,b,a,a,b]:
+#     if i not in mm:
+#         mm.append(i)
+print(mm)
+print(se)
+
+# # Using == operator and all() method
+# print((arr == arr1).all())
 
 # Output
 # False
+# import random
+# random.shuffle(mylist)
+# print(mylist)
 

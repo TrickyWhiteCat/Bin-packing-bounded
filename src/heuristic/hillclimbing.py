@@ -7,54 +7,6 @@ import time
 import numpy as np
 from random import *
 from copy import deepcopy
-def CreatDataModel(filename,N,K,MaxQ,MinC,MaxC):
-    f = open(filename,'w')
-    f.write(str(N)+' '+str(K)+'\n')
-
-    D = [randint(1,MaxQ)*10 for i in range(N)]
-    C = [randint(MinC,MaxC) for i in range(N)]
-
-    for i in range(N):
-        f.write(str(D[i])+' '+str(C[i])+'\n')
-    
-    x = [randint(0,K) for i in range(N)]
-    # The Order i is transported by Truck x[i]
-
-    load = [0 for i in range(K)]
-    c1 = [0 for i in range(K)]
-    c2 = [0 for i in range(K)]
-    
-    for k in range(K):
-        for i in range(N):
-            if x[i] == k:
-                load[k] = load[k] + D[i] # The minimal load for truck k
-        c1[k] = load[k]
-        c2[k] = c1[k] + randint(0,40)
-
-    for k in range(K):
-        f.write(str(c1[k])+' '+str(c2[k])+'\n')
-
-def Input(filename):
-    with open(filename,'r') as f:
-        N,K = list(map(int,f.readline().split()))
-        D = []
-        C = []
-        # lst1 = []
-        for i in range(N):
-            line = f.readline().split()
-            D.append(int(line[0]))
-            C.append(int(line[1]))
-
-        c1 = []
-        c2 = []
-        for k in range(K):
-            load = f.readline().split()
-            c1.append(int(load[0]))
-            c2.append(int(load[1]))
-
-        # print(lst1)
-
-    return N,K,D,C,c1,c2
 class Solver:
     def __init__(self,input_file,*args):
         super().__init__(*args)
@@ -174,8 +126,8 @@ class Solver:
                     matrix[idx][truck]=1
                     break
         a=np.ones(num_trucks,)
-        print(f"Number of goods delivered: {int(matrix.sum())}/{self.num_customers}")
-        print(f"Total goods' values: {(value@matrix)@a}")
+        # print(f"Number of goods delivered: {int(matrix.sum())}/{self.num_customers}")
+        # print(f"Total goods' values: {(value@matrix)@a}")
         
         return matrix
     
@@ -191,7 +143,23 @@ class Solver:
             a=b
         return lst
 
-    def create_neighbour(self,matrix:np): #dynamic neighbourhood size
+    # def create_neighbour(self,matrix:np): #dynamic neighbourhood size
+    #     self.__read_input()
+    #     num_customers=self.num_customers
+    #     num_trucks=self.num_trucks
+    #     quantity=self.__quantity
+    #     value=self.__value 
+    #     lower_bound=self.__lower_bound
+    #     upper_bound=self.__upper_bound 
+    #     bina=self.create_binary()
+    #     while True:
+    #         N=randint(1,num_customers)
+    #         lst=sample(range(num_customers),k=N)
+    #         for customer in lst :
+    #             matrix[customer] = choice(bina)
+    #         return matrix
+    
+    def create_neighbour(self,matrix:np):
         self.__read_input()
         num_customers=self.num_customers
         num_trucks=self.num_trucks
@@ -202,10 +170,16 @@ class Solver:
         bina=self.create_binary()
         while True:
             N=randint(1,num_customers)
+            # for N in range(num_customers):
             lst=sample(range(num_customers),k=N)
+            new_matrix=deepcopy(matrix)
             for customer in lst :
-                matrix[customer] = choice(bina)
-            return matrix
+                rd= choice(bina)
+                # if new_matrix[customer] != rd:
+                new_matrix[customer] = rd
+            if self.check_constraints(new_matrix) and (not (new_matrix==matrix).all()) :
+                break
+        return new_matrix
         
     def fitness(self,matrix:np):
         if self.check_constraints(matrix):
@@ -224,34 +198,58 @@ class Solver:
         K=np.ones(num_trucks,)
         return (value@matrix)@K
     
+    # def hill_climbing(self,matrix:np):
+    #     if not self.check_constraints(matrix):
+    #         return 
+    #     initial_solution=matrix
+    #     current_solution=initial_solution
+    #     best_fitness=self.fitness(matrix)
+    #     feasible_lst=[(matrix,best_fitness)]
+    #     t1=time.time()
+    #     while True:
+    #         current_solution = self.create_neighbour(current_solution)
+    #         temp=self.fitness(current_solution)
+    #         # print(best_fitness,temp)
+    #         if best_fitness <= temp:
+    #             best_fitness=temp
+    #             print(self.check_constraints(current_solution))
+    #             print(temp)
+    #             feasible_lst.append((current_solution,self.fitness(current_solution)))
+                
+    #         t2=time.time()
+    #         if t2-t1 >= 5:
+    #             feasible_lst.sort(key=lambda x: x[1], reverse=True)
+    #             print(feasible_lst)
+    #             print(f'best_fitness={feasible_lst[0][1]}, total packages ={feasible_lst[0][0].sum()}', self.check_constraints(feasible_lst[0]))
+    #             return 
     def hill_climbing(self,matrix:np):
         if not self.check_constraints(matrix):
             return 
         initial_solution=matrix
         current_solution=initial_solution
-        best_fitness=self.fitness(matrix)
+        best_fitness=self.objective_function(matrix)
+        feasible_lst=[(matrix,best_fitness)]
         t1=time.time()
-        for k in range(1000):
-            while True:
-                current_solution = self.create_neighbour(current_solution)
-                temp=self.fitness(current_solution)
-                if best_fitness < temp:
-                    best_fitness=temp
-                    break
-                t2=time.time()
-                if t2-t1 >= 60:
-                    return 
-            print(k,f'best_fitness={best_fitness}')
-        
-        
+        while True:
+            current_solution = self.create_neighbour(current_solution)
+            temp=self.objective_function(current_solution)
+            # print(best_fitness,temp)
+            if best_fitness <= temp:
+                best_fitness=temp
+                # print(self.check_constraints(current_solution))
+                # print(temp)
+                feasible_lst.append((current_solution,self.fitness(current_solution)))
+                
+            t2=time.time()
+            if t2-t1 >= 60:
+                feasible_lst.sort(key=lambda x: x[1], reverse=True)
+                print(f'best_fitness={feasible_lst[0][1]}, total packages ={feasible_lst[0][0].sum()}', self.check_constraints(feasible_lst[0][0]))
+                return 
+            
 t1=time.time()
 solver=Solver(input_file='1.txt')
 ma=solver.create_initial_state()
-# d=solver.create_constraints(ma)
-# d=solver.create_binary()
-# mm=solver.create_neighbors(ma)
 hill=solver.hill_climbing(ma)
-# print(ma)
 t2=time.time()
 print(t2-t1)
    

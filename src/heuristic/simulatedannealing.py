@@ -8,55 +8,7 @@ import numpy as np
 from random import *
 from copy import deepcopy
 from math import *
-import matplotlib  as plt
-def CreatDataModel(filename,N,K,MaxQ,MinC,MaxC):
-    f = open(filename,'w')
-    f.write(str(N)+' '+str(K)+'\n')
-
-    D = [randint(1,MaxQ)*10 for i in range(N)]
-    C = [randint(MinC,MaxC) for i in range(N)]
-
-    for i in range(N):
-        f.write(str(D[i])+' '+str(C[i])+'\n')
-    
-    x = [randint(0,K) for i in range(N)]
-    # The Order i is transported by Truck x[i]
-
-    load = [0 for i in range(K)]
-    c1 = [0 for i in range(K)]
-    c2 = [0 for i in range(K)]
-    
-    for k in range(K):
-        for i in range(N):
-            if x[i] == k:
-                load[k] = load[k] + D[i] # The minimal load for truck k
-        c1[k] = load[k]
-        c2[k] = c1[k] + randint(0,40)
-
-    for k in range(K):
-        f.write(str(c1[k])+' '+str(c2[k])+'\n')
-
-def Input(filename):
-    with open(filename,'r') as f:
-        N,K = list(map(int,f.readline().split()))
-        D = []
-        C = []
-        # lst1 = []
-        for i in range(N):
-            line = f.readline().split()
-            D.append(int(line[0]))
-            C.append(int(line[1]))
-
-        c1 = []
-        c2 = []
-        for k in range(K):
-            load = f.readline().split()
-            c1.append(int(load[0]))
-            c2.append(int(load[1]))
-
-        # print(lst1)
-
-    return N,K,D,C,c1,c2
+import matplotlib.pyplot as plt
 class Solver:
     def __init__(self,input_file,*args):
         super().__init__(*args)
@@ -172,8 +124,8 @@ class Solver:
                     matrix[idx][truck]=1
                     break
         a=np.ones(num_trucks,)
-        print(f"Number of goods delivered: {int(matrix.sum())}/{self.num_customers}")
-        print(f"Total goods' values: {(value@matrix)@a}")
+        # print(f"Number of goods delivered: {int(matrix.sum())}/{self.num_customers}")
+        # print(f"Total goods' values: {(value@matrix)@a}")
         # matrix[0]=[1,0]
         
         return matrix
@@ -201,12 +153,10 @@ class Solver:
         bina=self.create_binary()
         while True:
             N=randint(1,num_customers)
-            # for N in range(num_customers):
             lst=sample(range(num_customers),k=N)
             new_matrix=deepcopy(matrix)
             for customer in lst :
                 rd= choice(bina)
-                # if new_matrix[customer] != rd:
                 new_matrix[customer] = rd
             if self.check_constraints(new_matrix) and (not (new_matrix==matrix).all()) :
                 break
@@ -228,14 +178,15 @@ class Solver:
        
     
     def simulated_annealing(self,matrix:np):
-        
-        import matplotlib.pyplot as plt
         # Customization section:
         initial_temperature = 100
         cooling = 0.7  # cooling coefficient
         number_variables = 2
-        computing_time = 120 # second(s)
+        computing_time = 30 # second(s)
+        
         # Simulated Annealing Algorithm:
+        if not self.check_constraints(matrix):
+            return 
         initial_solution=matrix
         current_solution = initial_solution
         best_solution = initial_solution
@@ -245,9 +196,9 @@ class Solver:
         start = time.time()
         no_attempts = 100 # number of attempts in each level of temperature
         record_best_fitness=[]
-
+        feasible_lst=[(matrix,best_fitness)]
+        
         for t in range (9999999) :
-            print(t)
             for attemp in range(no_attempts):    
                 
             # find randomly neighbors/current solution for solution
@@ -266,40 +217,30 @@ class Solver:
                     else:
                         accept = False # this worse solution is not accepted
                 else:
+                    feasible_lst.append((current_solution,current_fitness))
                     accept=  True # accent better solution 
                 if accept==True:
                     best_solution = current_solution # update the best solution
                     best_fitness = self.objective_function(best_solution)
                     n = n + 1 # count the solutions accepted
                     EA = (EA *(n-1) + E)/n # update EA by chosen formula
-            print ('interation: {}, best_fitness: {}'.format(t, best_fitness))
-           
+            # print ('interation: {}, best_fitness: {}'.format(t, best_fitness))
             record_best_fitness.append(best_fitness)
             # cooling the temperoture
             current_temperature = current_temperature*cooling
             
-            
         # compute time
             end =time.time ()
             if end-start >= computing_time:
+                feasible_lst.sort(key=lambda x: x[1], reverse=True)
+                print(f'best_fitness={feasible_lst[0][1]}, total packages ={feasible_lst[0][0].sum()}', self.check_constraints(feasible_lst[0][0]))
                 break
-        plt.plot(record_best_fitness)
-        plt.show()
-
-       
-              
-        
-   
-        
-        
-        
-        
+        # plt.plot(record_best_fitness)
+        # plt.show()
 t1=time.time()
 solver=Solver(input_file='1.txt')
 ma=solver.create_initial_state()
-
 mm=solver.simulated_annealing(ma)
-
 t2=time.time()
 print(t2-t1)
    

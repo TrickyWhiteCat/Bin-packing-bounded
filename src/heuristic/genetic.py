@@ -61,7 +61,7 @@ class Solver:
         super().__init__(*args)
         self.__input_file=input_file
 
-    def __read_input(self):
+    def __read_input(self)->None:
         if self.__input_file is None:
             raise(f"No input file was specified!")
         try:
@@ -98,7 +98,7 @@ class Solver:
         self.__lower_bound = lower_bound
         self.__upper_bound = upper_bound
 
-    def check_constraints(self, matrix:np):
+    def check_constraints(self, matrix:np) ->bool:
         self.__read_input()
         num_customers=self.num_customers
         num_trucks=self.num_trucks
@@ -117,7 +117,7 @@ class Solver:
                 return False
         return True
     
-    def create_initial_state(self):
+    def create_initial_state(self)->np:
         self.__read_input()
         num_customers=self.num_customers
         num_trucks=self.num_trucks
@@ -188,7 +188,7 @@ class Solver:
             lst.append(a)
             a=b
         return lst
-    def create_neighbour(self,matrix:np): #dynamic neighbourhood size
+    def create_neighbour(self,matrix:np)->np: #dynamic neighbourhood size
         self.__read_input()
         num_customers=self.num_customers
         num_trucks=self.num_trucks
@@ -203,15 +203,8 @@ class Solver:
             for customer in lst :
                 matrix[customer] = choice(bina)
             return matrix
-        
-    def fitness(self,matrix:np):
-        if self.check_constraints(matrix):
-            return self.objective_function(matrix)
-        return 0
-    
-    
 
-    def objective_function(self,matrix:np):
+    def objective_function(self,matrix:np)->int:
         self.__read_input()
         num_customers=self.num_customers
         num_trucks=self.num_trucks
@@ -223,19 +216,121 @@ class Solver:
         K=np.ones(num_trucks,)
         return (value@matrix)@K
 
-	#initialize variables and lists
-    
-    
-    def generate_initial_population(self,size):
+    def generate_initial_population(self,size:int)->list:
         population = set()
         matrix=self.create_initial_state()
+        if self.check_constraints(matrix):
+            a=[tuple(i) for i in matrix]
+            population.add(tuple(a))
         # generate initial population having `count` individuals
         while len(population) != size:
             # pick random bits one for each item and 
             # create an individual 
-            population.add(self.create_neighbour(matrix))
+            a=[tuple(i) for i in self.create_neighbour(matrix)]
+            population.add(tuple(a))
 
-        return list(population)
+        return [np.array(individual) for individual in population]
     
+    def fitness(self,matrix:np)->int:
+        if self.check_constraints(matrix):
+            return self.objective_function(matrix)
+        return 0
+    
+    def selection(self,population:list)->list:
+        parents = []
+        # randomly shuffle the population
+        shuffle(population)
+        # while len(parents) < 2:
+        # we use the first 4 individuals
+        # run a tournament between them and
+        # get two fit parents for the next steps of evolution
+
+        # tournament between first and second
+        if self.fitness(population[0]) > self.fitness(population[1]) :
+            parents.append(population[0])
+        elif  self.fitness(population[0]) < self.fitness(population[1]):
+            parents.append(population[1])
+
+        # tournament between third and fourth
+        if self.fitness(population[2]) > self.fitness(population[3]):
+            parents.append(population[2])
+        # elif self.fitness(population[2]) < self.fitness(population[3]):
+        else:
+            parents.append(population[3])
+            # shuffle(population)
+
+        return parents
+    
+    def crossover(self,parents: list) -> list:
+        N = self.num_customers
+        threshold=N//2
+        child1 = np.concatenate((parents[0][:threshold],parents[1][threshold:]))
+        child2 = np.concatenate((parents[0][threshold:],parents[1][:threshold]))
+
+        return [child1,child2]
+    
+    def mutate(self,individuals:np,MUTATION_RATE) -> np:
+        for individual in individuals:
+            for i,customer in enumerate(individual):
+                if random() > MUTATION_RATE:
+                    temp=list(customer)
+                    lst=self.create_binary()
+                    lst.remove(temp)
+                    individual[i]=choice(lst)
+        return individuals
+    
+    def next_generation(self,population:list,REPRODUCTION_RATE,CROSSOVER_RATE,MUTATION_RATE) -> list:
+        next_gen = []
+        while len(next_gen) < len(population):
+            children = []
+
+            # we run selection and get parents
+            parents = self.selection(population)
+
+        # reproduction
+            if random() < REPRODUCTION_RATE:
+                children = parents
+            else:
+                # crossover
+                if random() < CROSSOVER_RATE:
+                    children = self.crossover(parents)
+
+            # mutation
+                if random() < MUTATION_RATE:
+                    self.mutate(children,MUTATION_RATE)
+
+            next_gen.extend(children)
+
+        return next_gen
+    
+    def Genetic(self,size:int,num_generation:int,REPRODUCTION_RATE:float,CROSSOVER_RATE:float,MUTATION_RATE:float) ->int:
+        population=self.generate_initial_population(size)
+        self.__read_input()
+        num_customers=self.num_customers
+        num_trucks=self.num_trucks
+        quantity=self.__quantity
+        value=self.__value 
+        lower_bound=self.__lower_bound
+        upper_bound=self.__upper_bound
+        # while True:
+        for t in range(num_generation):
+            
+            population=self.next_generation(population,REPRODUCTION_RATE,CROSSOVER_RATE,MUTATION_RATE)
+            
+        population = sorted(population, key=lambda i: self.fitness(i), reverse=True)
+        solution=population[0]
+        K=np.ones(num_trucks,)
+            # if  (value@solution)@K >= 131:
+            #     break
+
+        
+        return self.check_constraints(solution), solution.sum(),(value@solution)@K
+    
+t1=time.time()
+solver=Solver(input_file='1.txt')
+final=solver.Genetic(50,500,0.3,0.4,0.01)
+print(final)
+t2=time.time()
+print(t2-t1)
     
 	
