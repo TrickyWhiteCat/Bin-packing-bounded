@@ -70,7 +70,7 @@ class Solver:
                 return False
         return True
     
-    def create_initial_state(self):
+    def greedy(self):
         self.__read_input()
         num_customers=self.num_customers
         num_trucks=self.num_trucks
@@ -123,11 +123,10 @@ class Solver:
                     real_load[truck] += q_customer
                     matrix[idx][truck]=1
                     break
-        a=np.ones(num_trucks,)
+        # a=np.ones(num_trucks,)
         # print(f"Number of goods delivered: {int(matrix.sum())}/{self.num_customers}")
         # print(f"Total goods' values: {(value@matrix)@a}")
         # matrix[0]=[1,0]
-        
         return matrix
     
     def create_binary(self):
@@ -142,7 +141,7 @@ class Solver:
             a=b
         return lst
 
-    def create_neighbour(self,matrix:np):
+    def create_neighbour(self,matrix:np,bina):
         self.__read_input()
         num_customers=self.num_customers
         num_trucks=self.num_trucks
@@ -150,7 +149,7 @@ class Solver:
         value=self.__value 
         lower_bound=self.__lower_bound
         upper_bound=self.__upper_bound 
-        bina=self.create_binary()
+        
         while True:
             N=randint(1,num_customers)
             lst=sample(range(num_customers),k=N)
@@ -162,7 +161,7 @@ class Solver:
                 break
         return new_matrix
     
-
+    
     def objective_function(self,matrix:np):
         self.__read_input()
         num_customers=self.num_customers
@@ -174,90 +173,79 @@ class Solver:
         
         K=np.ones(num_trucks,)
         return (value@matrix)@K
-         
+        
        
     
-    def simulated_annealing(self,matrix:np):
-        # Customization section:
-        initial_temperature = 100
-        cooling = 0.7  # cooling coefficient
-        number_variables = 2
-        computing_time = 30 # second(s)
+    def simulated_annealing(self,temperature:int, cooling_rate:float, timelimit:int):
+        self.__read_input()
+        num_customers=self.num_customers
+        num_trucks=self.num_trucks
+        quantity=self.__quantity
+        value=self.__value 
+        start= time.time()
+        current_temperature = temperature
         
-        # Simulated Annealing Algorithm:
-        # if not self.check_constraints(matrix):
-        #     return 
-        initial_solution=matrix
-        # current_solution = initial_solution
-        current_solution=self.create_neighbour(initial_solution)
-        # best_solution = initial_solution
-        n = 1  # no of solutions accepted
-        best_fitness = self.objective_function(current_solution)
-        best_score=best_fitness
-        current_temperature = initial_temperature # current temperature
-        start = time.time()
-        no_attempts = 100 # number of attempts in each level of temperature
-        record_best_fitness=[]
-        feasible_lst=[(matrix,best_fitness)]
+        greedy_solution = self.greedy()
+        initial_solution = self.create_neighbour(greedy_solution,self.create_binary())
         
-        for t in range (9999999) :
-            for attemp in range(no_attempts):    
+        current_solution = initial_solution
+        current_score = self.objective_function(initial_solution)
+        
+        best_solution = current_solution
+        best_score = current_score
+        
+        n=1
+        record_score=[current_score]
+        
+        while True:
+            for t in range (999999999):
+                
+                end=time.time() 
+                if end - start >= timelimit:
+                    print(f'best_value = {int(best_score)}/{value.sum()}, total packages = {int(best_solution.sum())}/{num_customers}')
+                    plt.plot(record_score)
+                    plt.show()
+                    return best_solution,best_score
+                
+                # find randomly neighbors / current solution for solution
+                next_solution=self.create_neighbour(current_solution,self.create_binary())
+                next_score = self.objective_function(next_solution)
             
-                
-            # find randomly neighbors/current solution for solution
-                current_solution=self.create_neighbour(current_solution)
-                
-                current_fitness = self.objective_function(current_solution)
-                
-                E = abs(current_fitness - best_fitness)
-                if t == 0 :
-                    if E==0: continue
-                    else: EA=E
-                #schedule(t) is EA*
-                if current_fitness < best_fitness:
-                    p = exp(-E/(EA*current_temperature)) #T high p high 
-            # decision to accept the worse solution or not 
+                E = next_score - current_score
+                EA=abs(E)
+
+                if E < 0:
+                    if EA==0:
+                        continue
+                    p = exp(E/(EA*current_temperature)) 
+                    # decision to accept the worse solution or not 
                     if random()<p: #random() is probability in this case
                         accept = True # this worse solution is accepted
                     else:
                         accept = False # this worse solution is not accepted
                 else:
-                    # feasible_lst.append((current_solution,current_fitness))
-
-                    accept=  True # accent better solution 
+                    accept = True # accent better solution
+                     
                 if accept==True:
-                    best_solution = current_solution # update the best solution
-                    best_fitness = self.objective_function(best_solution)
+                    current_score = next_score
+                    current_solution = next_solution # update the best solution
                     n = n + 1 # count the solutions accepted
                     EA = (EA *(n-1) + E)/n # update EA by chosen formula
-                if best_score <= best_fitness:
-                    best_score=best_fitness
-                    result=(current_solution,best_score)
-            # print ('interation: {}, best_fitness: {}'.format(t, best_fitness))
+                record_score.append(current_score)
+                current_temperature = current_temperature*cooling_rate
                 
-                # if best_fitness == 358:
-                #     return 
-            record_best_fitness.append(best_fitness)
-            # cooling the temperoture
-            current_temperature = current_temperature*cooling
-            
-            end =time.time()
-            if end-start >= computing_time:
-                # feasible_lst.sort(key=lambda x: x[1], reverse=True)
-                # print(f'best_fitness={feasible_lst[0][1]}, total packages ={feasible_lst[0][0].sum()}', self.check_constraints(feasible_lst[0][0]))
-                print(f'best_fitness={result[1]}, total packages ={result[0].sum(), self.check_constraints(result[0])}')
-                break
-        print(f'best_fitness={result[1]}, total packages ={result[0].sum(), self.check_constraints(result[0])}')   
-        # compute time        
-        plt.plot(record_best_fitness)
-        plt.show()
-        
-t1=time.time()
-solver=Solver(input_file='1.txt')
-ma=solver.create_initial_state()
-mm=solver.simulated_annealing(ma)
-t2=time.time()
-print(t2-t1)
+                if best_score <= current_score:
+                    best_solution = current_solution
+                    best_score = current_score
+                
+if __name__ =="__main__":
+    
+    t1=time.time()
+    solver=Solver(input_file='1.txt')
+    print(solver.objective_function(solver.create_neighbour(solver.greedy(),solver.create_binary())))
+    solver.simulated_annealing(temperature=1000,cooling_rate=0.7,timelimit=60)
+    t2=time.time()
+    print(t2-t1)
 
                     
                     

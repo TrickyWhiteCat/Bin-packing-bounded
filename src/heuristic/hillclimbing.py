@@ -7,6 +7,7 @@ import time
 import numpy as np
 from random import *
 from copy import deepcopy
+import matplotlib.pyplot as plt
 class Solver:
     def __init__(self,input_file,*args):
         super().__init__(*args)
@@ -68,7 +69,7 @@ class Solver:
                 return False
         return True
     
-    def create_initial_state(self):
+    def greedy(self):
         self.__read_input()
 
         num_customers=self.num_customers
@@ -143,22 +144,6 @@ class Solver:
             a=b
         return lst
 
-    # def create_neighbour(self,matrix:np): #dynamic neighbourhood size
-    #     self.__read_input()
-    #     num_customers=self.num_customers
-    #     num_trucks=self.num_trucks
-    #     quantity=self.__quantity
-    #     value=self.__value 
-    #     lower_bound=self.__lower_bound
-    #     upper_bound=self.__upper_bound 
-    #     bina=self.create_binary()
-    #     while True:
-    #         N=randint(1,num_customers)
-    #         lst=sample(range(num_customers),k=N)
-    #         for customer in lst :
-    #             matrix[customer] = choice(bina)
-    #         return matrix
-    
     def create_neighbour(self,matrix:np):
         self.__read_input()
         num_customers=self.num_customers
@@ -180,11 +165,7 @@ class Solver:
             if self.check_constraints(new_matrix) and (not (new_matrix==matrix).all()) :
                 break
         return new_matrix
-        
-    def fitness(self,matrix:np):
-        if self.check_constraints(matrix):
-            return self.objective_function(matrix)
-        return 0
+    
     
     def objective_function(self,matrix:np):
         self.__read_input()
@@ -198,60 +179,52 @@ class Solver:
         K=np.ones(num_trucks,)
         return (value@matrix)@K
     
-    # def hill_climbing(self,matrix:np):
-    #     if not self.check_constraints(matrix):
-    #         return 
-    #     initial_solution=matrix
-    #     current_solution=initial_solution
-    #     best_fitness=self.fitness(matrix)
-    #     feasible_lst=[(matrix,best_fitness)]
-    #     t1=time.time()
-    #     while True:
-    #         current_solution = self.create_neighbour(current_solution)
-    #         temp=self.fitness(current_solution)
-    #         # print(best_fitness,temp)
-    #         if best_fitness <= temp:
-    #             best_fitness=temp
-    #             print(self.check_constraints(current_solution))
-    #             print(temp)
-    #             feasible_lst.append((current_solution,self.fitness(current_solution)))
-                
-    #         t2=time.time()
-    #         if t2-t1 >= 5:
-    #             feasible_lst.sort(key=lambda x: x[1], reverse=True)
-    #             print(feasible_lst)
-    #             print(f'best_fitness={feasible_lst[0][1]}, total packages ={feasible_lst[0][0].sum()}', self.check_constraints(feasible_lst[0]))
-    #             return 
-    def hill_climbing(self,matrix:np):
-        if not self.check_constraints(matrix):
-            return 
-        initial_solution=matrix
-        current_solution=initial_solution
-        best_fitness=self.objective_function(matrix)
-        feasible_lst=[(matrix,best_fitness)]
-        t1=time.time()
+    def hill_climbing(self,timelimit):
+        self.__read_input()
+        num_customers=self.num_customers
+        num_trucks=self.num_trucks
+        quantity=self.__quantity
+        value=self.__value 
+        start = time.time()
+        greedy_solution = self.greedy() 
+        initial_solution= self.create_neighbour(greedy_solution)
+    
+        current_solution = initial_solution
+        current_score = self.objective_function(initial_solution)
+        
+        best_solution = current_solution
+        best_score = current_score
+        record_score =[current_score]
+        
         while True:
-            current_solution = self.create_neighbour(current_solution)
-            temp=self.objective_function(current_solution)
-            # print(best_fitness,temp)
-            if best_fitness <= temp:
-                best_fitness=temp
-                # print(self.check_constraints(current_solution))
-                # print(temp)
-                feasible_lst.append((current_solution,self.fitness(current_solution)))
-                
-            t2=time.time()
-            if t2-t1 >= 60:
-                feasible_lst.sort(key=lambda x: x[1], reverse=True)
-                print(f'best_fitness={feasible_lst[0][1]}, total packages ={feasible_lst[0][0].sum()}', self.check_constraints(feasible_lst[0][0]))
-                return 
             
-t1=time.time()
-solver=Solver(input_file='1.txt')
-ma=solver.create_initial_state()
-hill=solver.hill_climbing(ma)
-t2=time.time()
-print(t2-t1)
+            end=time.time() 
+            if end - start >= timelimit:
+                print(f'best_value = {int(best_score)}/{value.sum()}, total packages = {int(best_solution.sum())}/{num_customers}')
+                plt.plot(record_score)
+                plt.show()
+                return best_solution,best_score
+            next_solution = self.create_neighbour(current_solution)
+            next_score = self.objective_function(next_solution)
+
+            if best_score <= next_score:
+                best_solution = next_solution
+                best_score = next_score
+                record_score.append(best_score)
+            else:
+                current_solution= next_solution
+                
+        
+
+
+        
+if __name__ =="__main__":           
+
+    t1=time.time()
+    solver=Solver(input_file='1.txt')
+    hill=solver.hill_climbing(180)
+    t2=time.time()
+    print(t2 - t1)
    
                     
                     

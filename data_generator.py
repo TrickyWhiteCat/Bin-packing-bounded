@@ -54,8 +54,8 @@ def generate_data(filename,N,K,max_load_range=40):
 
 if __name__ == "__main__":
     generate_data(filename='1.txt',
-                  N=25,
-                  K=6,
+                  N=50,
+                  K=4,
                   )
 
 

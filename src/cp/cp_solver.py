@@ -204,7 +204,7 @@ class CPSolver:
 
 def main():
     logging.basicConfig(level=logging.INFO)
-    solver = CPSolver(input_file="1.txt", use_greedy=True)
+    solver = CPSolver(input_file="1.txt", use_greedy=False)
     print(solver.plan)
 
 
