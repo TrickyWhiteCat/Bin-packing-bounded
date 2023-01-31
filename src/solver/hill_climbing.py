@@ -108,6 +108,7 @@ class Hillclimbing:
         self.__read_input()
         start = time.time()
         
+        
         greedy_solution = GreedySolver(input_file=self.__input_file).solve().T
         initial_solution= self.create_neighbour(greedy_solution)
     
@@ -133,7 +134,10 @@ class Hillclimbing:
                 current_solution= next_solution
         
     def solve(self,timelimit=60):
+    def solve(self,timelimit=60):
         self.__read_input()
+        
+        self.solution,self.objective_value = self.hill_climbing(timelimit)      
         
         self.solution,self.objective_value = self.hill_climbing(timelimit)      
         self.num_deliver_packages = self.solution.sum()
