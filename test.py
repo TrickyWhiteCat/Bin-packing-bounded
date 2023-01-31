@@ -8,8 +8,8 @@ import time
 import os
 
 
-from src import GreedySolver, CPSolver, ILPSolver, Simulatedannealing, Hillclimbing
-from data_generator import generate_data
+from src import GreedySolver, CPSolver, ILPSolver, SimulatedAnnealing, HillClimbing
+from src.solver.utils.data_generator import generate_data
 
 def test(N, K, time_limit:int = 60, data_path:str = None, result_file:str = None, create_new_data:bool = True):
     if data_path is None:
@@ -27,8 +27,8 @@ def test(N, K, time_limit:int = 60, data_path:str = None, result_file:str = None
 
     # Initialize solvers
     solvers= [GreedySolver(input_file=data_path),
-              Hillclimbing(input_file=data_path),
-              Simulatedannealing(input_file=data_path),
+              HillClimbing(input_file=data_path),
+              SimulatedAnnealing(input_file=data_path),
               CPSolver(input_file=data_path, use_greedy=False, time_limit=time_limit, log_cp_sat_process = False),
               ILPSolver(input_file=data_path, time_limit=time_limit),
               CPSolver(input_file=data_path, use_greedy=True, time_limit=time_limit, log_cp_sat_process = False)]

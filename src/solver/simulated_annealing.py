@@ -13,7 +13,7 @@ if __name__ == "__main__":
 else:
     from .utils.initial_greedy import GreedySolver
 
-class Simulatedannealing:
+class SimulatedAnnealing:
     def __init__(self,input_file,*args):
         super().__init__(*args)
         self.__input_file=input_file
@@ -182,5 +182,5 @@ class Simulatedannealing:
         return res      
           
 if __name__ =="__main__":
-    solver=Simulatedannealing(input_file='data.txt')
+    solver=SimulatedAnnealing(input_file='data.txt')
     print(solver.plan(time_limit=5))

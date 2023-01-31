@@ -12,7 +12,7 @@ if __name__ == "__main__":
 else:
     from .utils.initial_greedy import GreedySolver
 
-class Hillclimbing:
+class HillClimbing:
     def __init__(self,input_file,*args):
         super().__init__(*args)
         self.__input_file=input_file
@@ -161,5 +161,5 @@ class Hillclimbing:
         
 if __name__ =="__main__":     
           
-    solver=Hillclimbing(input_file='data.txt')
+    solver=HillClimbing(input_file='data.txt')
     print(solver.plan())

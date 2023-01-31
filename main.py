@@ -6,8 +6,8 @@ setup(required)
 import logging
 import time
 
-from src import GreedySolver, CPSolver, ILPSolver
-from data_generator import generate_data
+from src import GreedySolver, CPSolver, ILPSolver, HillClimbing, SimulatedAnnealing
+from src.solver.utils.data_generator import generate_data
 
 def main():
 
@@ -19,14 +19,19 @@ def main():
                   MAX_Q=10,
                   MIN_C=5,
                   MAX_C=10)
+    time_limit = 3
 
     # Initialize solvers
-    greedy_solver = GreedySolver(input_file=data_path)
-    cp_solver = CPSolver(input_file=data_path, use_greedy=True, time_limit=10, log_cp_sat_process = False)
-    ilp_solver = ILPSolver(input_file=data_path, time_limit=10)
+    solvers= [GreedySolver(input_file=data_path),
+              HillClimbing(input_file=data_path),
+              SimulatedAnnealing(input_file=data_path),
+              CPSolver(input_file=data_path, use_greedy=False, time_limit=time_limit, log_cp_sat_process = False),
+              ILPSolver(input_file=data_path, time_limit=time_limit),
+              CPSolver(input_file=data_path, use_greedy=True, time_limit=time_limit, log_cp_sat_process = False)]
+
 
     # Test all solver
-    for solver in [greedy_solver, cp_solver, ilp_solver]:
+    for solver in solvers:
         print(type(solver))
         start = time.time()
         res = solver.plan()
