@@ -12,4 +12,4 @@ There exist N customers 1, 2,..., N where customer `i` ordered `d[i]` quantity o
 - [x] Greedy
 - [x] Integer Linear Programming (ILP)
 - [x] Constraint Programming (CP)
-- [ ] Heuristic - constraint based local search
+- [x] Heuristic - constraint based local search

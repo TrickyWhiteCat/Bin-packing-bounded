@@ -3,11 +3,15 @@ import logging
 import numpy as np
 
 class GreedySolver:
-    def __init__(self, input_file, logger = None, *args):
+    def __init__(self, input_file, logger = None, *args, **kwargs):
         self.__input_file = input_file
         if logger is None:
             logger = logging.getLogger("GreedySolver")
         self.__logger = logger
+        try:
+            self.__prioritize = kwargs["prioritize"]
+        except KeyError:
+            self.__prioritize = None
 
     def __read_input(self):
         self.__logger.info(f"Trying to read input...")
@@ -70,6 +74,30 @@ class GreedySolver:
             customer_rate=[(i, self.__value[i]) for i in range(self.num_customers)]
         if prioritize == "efficiency":
             customer_rate=[(i, self.__value[i]/self.__quantity[i]) for i in range(self.num_customers)]
+        if prioritize == "importance":
+            # Scaling down values and quantity to a range of [min_importance, 1]
+            max_val = max(self.__value)
+            min_val = min(self.__value)
+            if min_val == max_val:
+                min_val = 0
+            max_quantity = max(self.__quantity)
+            min_quantity = min(self.__quantity)
+            if min_quantity == max_quantity:
+                min_quantity = 0
+            values = []
+            quantities = []
+
+            min_importance = 0.1 # This is the minimum importance. It's defined because the importance of a package should not be 0
+            for idx in range(self.num_customers):
+                values.append((self.__value[idx] - min_val) / (max_val - min_val) * (1 - min_importance) + min_importance)
+                quantities.append((self.__quantity[idx] - min_quantity) / (max_quantity - min_quantity) * (1 - min_importance) + min_importance)
+
+            # Adding importance as the key to the sorting function
+            customer_rate = []
+            order = 0.5
+            for idx in range(self.num_customers):
+                importance = values[idx] * (quantities[idx] ** order) # Since each quantity here should be smaller than 1, its power should be smaller than itself.
+                customer_rate.append((idx, importance))
 
         self.__logger.info("Sorting customers...")
         customer_rate.sort(key=lambda x: -x[1]) # Sort giam dan theo value
@@ -137,7 +165,11 @@ class GreedySolver:
         self.__read_input()
 
         goods_pos = None
-        for key in ["efficiency", "value", "quantity"]:
+        if self.__prioritize is None:
+            prioritize = ["efficiency", "value", "importance", "quantity"]
+        else:
+            prioritize = [self.__prioritize]
+        for key in prioritize:
             try:
                 self.__logger.info(f"Trying to use greedy algorithm with packages sorted by {key}")
                 goods_pos = self.__add_goods(prioritize=key)
@@ -182,7 +214,7 @@ class GreedySolver:
 
 def main():
     logging.basicConfig(level=logging.INFO)
-    solver = GreedySolver(input_file='12.txt')
+    solver = GreedySolver(input_file='data.txt')
     solution = solver.solve()
 
 if __name__ == "__main__":

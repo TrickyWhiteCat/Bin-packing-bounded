@@ -176,15 +176,15 @@ class CPSolver:
             solver.parameters.max_time_in_seconds = self.__time_limit
         self.__logger.info(f"Time limit was set to {self.__time_limit}")
 
-        solver.parameters.num_workers = 0 # Use all cores to search
+        solver.parameters.num_workers = 0 # 0 means that solver will use all cores to search
         solver.parameters.log_search_progress = self.__log_cp_sat_process
-        solution_callback = SolutionCallback(variables=self.__variables, time_limit=self.__time_limit)
+        self.__solution_callback = SolutionCallback(variables=self.__variables, time_limit=self.__time_limit)
         if self.use_greedy and greedy_sol is not None:
-            solution_callback.solution = initial_sol
+            self.__solution_callback.solution = initial_sol
 
         self.__logger.info(f"Solving with ortools' CpSolver...")
-        status = solver.Solve(model=self.__model, solution_callback=solution_callback)
-        if solution_callback.solution is None:
+        status = solver.Solve(model=self.__model, solution_callback=self.__solution_callback)
+        if self.__solution_callback.solution is None:
             self.__logger.error(f"No solution found!")
             return None
 
@@ -193,14 +193,23 @@ class CPSolver:
             self.objective_value = greedy_solver.objective_value
         elif status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
             self.__logger.info(f"Solution was get.")
-            self.objective_value = solution_callback.ObjectiveValue()
+            self.objective_value = self.__solution_callback.ObjectiveValue()
             
-        self.num_deliver_packages = sum(solution_callback.solution)
+        self.num_deliver_packages = sum(self.__solution_callback.solution)
         
         # Reshape the solution into a K x N one hot matrix
         solution = []
         for truck_idx in range(self.num_trucks):
-            solution.append(solution_callback.solution[truck_idx * self.num_customers: (truck_idx+1) * self.num_customers])
+            solution.append(self.__solution_callback.solution[truck_idx * self.num_customers: (truck_idx+1) * self.num_customers])
+        return solution
+
+    @property
+    def solution(self):
+        if self.__solution_callback.solution is None:
+            return None
+        solution = []
+        for truck_idx in range(self.num_trucks):
+            solution.append(self.__solution_callback.solution[truck_idx * self.num_customers: (truck_idx+1) * self.num_customers])
         return solution
 
     def plan(self):
@@ -222,7 +231,7 @@ class CPSolver:
 
 def main():
     logging.basicConfig(level=logging.INFO)
-    solver = CPSolver(input_file="1.txt", use_greedy=True)
+    solver = CPSolver(input_file="data.txt", use_greedy=True)
     print(solver.plan())
 
 

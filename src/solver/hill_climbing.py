@@ -7,8 +7,11 @@ import time
 import numpy as np
 from random import *
 from copy import deepcopy
-import matplotlib.pyplot as plt
-from src.solver.initial_greedy import *
+if __name__ == "__main__":
+    from utils.initial_greedy import GreedySolver
+else:
+    from .utils.initial_greedy import GreedySolver
+
 class Hillclimbing:
     def __init__(self,input_file,*args):
         super().__init__(*args)
@@ -53,85 +56,17 @@ class Hillclimbing:
 
     def check_constraints(self, matrix:np):
         self.__read_input()
-        num_customers=self.num_customers
-        num_trucks=self.num_trucks
 
         quantity=self.__quantity
-        value=self.__value 
-        total_value=self.total_value
 
         lower_bound=self.__lower_bound
         upper_bound=self.__upper_bound 
         
         real_load_matrix=np.dot(quantity,matrix)
-        #print(real_load_matrix)
         for i,weight in enumerate(real_load_matrix):
             if  weight > upper_bound[i] or weight < lower_bound[i]:
                 return False
         return True
-    
-    def greedy(self):
-        self.__read_input()
-
-        num_customers=self.num_customers
-        num_trucks=self.num_trucks
-
-        quantity=self.__quantity
-        value=self.__value 
-        total_value=self.total_value
-
-        lower_bound=self.__lower_bound
-        upper_bound=self.__upper_bound 
-        
-        customer_rate=[(i, value[i]) for i in range(num_customers)]
-        customer_rate.sort(key=lambda x: -x[1]) # Sort giam dan
-
-        truck_rate=[(i,upper_bound[i]) for i in range(num_trucks)]
-        truck_rate.sort(key=lambda x: -x[1])
-
-        matrix=np.zeros((num_customers,num_trucks))
-        
-        real_load=[0 for truck in range(num_trucks)]
-        
-        for idx, rate in customer_rate:
-
-            q_customer=quantity[idx]
-            v_customer=value[idx]
-            
-            # Nhet du lower
-            for t in truck_rate: # Chon xe
-                truck=t[0]
-                lower=lower_bound[truck]
-                upper=upper_bound[truck]
-
-                if real_load[truck] < lower and real_load[truck] + q_customer <= upper: # nhet du lower da
-                    real_load[truck] += q_customer
-                    matrix[idx][truck]=1
-                    break
-
-        # Toi day la co du lower bound r, phai check xem hang dc nhet vao xe chua, chua dc nhet thi minh nhet vao
-        for idx, rate in customer_rate:
-            if matrix[idx].sum() > 0:
-                continue
-            q_customer=quantity[idx]
-            
-            # Nhet du lower
-            #print(f"{q_customer=}")
-            for t in truck_rate: # Chon xe
-                truck=t[0]
-                lower=lower_bound[truck]
-                upper=upper_bound[truck]
-
-                #print(f"Truck {truck} load: {real_load[truck]}, upper bound: {upper}, diff: {upper - real_load[truck]}")
-                if real_load[truck] + q_customer <= upper: # nhet vua xe
-                    real_load[truck] += q_customer
-                    matrix[idx][truck]=1
-                    break
-        # a=np.ones(num_trucks,)
-        # print(f"Number of goods delivered: {int(matrix.sum())}/{self.num_customers}")
-        # print(f"Total goods' values: {(value@matrix)@a}")
-        
-        return matrix
     
     def create_binary(self):
         self.__read_input()
@@ -148,20 +83,13 @@ class Hillclimbing:
     def create_neighbour(self,matrix:np):
         self.__read_input()
         num_customers=self.num_customers
-        num_trucks=self.num_trucks
-        quantity=self.__quantity
-        value=self.__value 
-        lower_bound=self.__lower_bound
-        upper_bound=self.__upper_bound 
         bina=self.create_binary()
         while True:
             N=randint(1,num_customers)
-            # for N in range(num_customers):
             lst=sample(range(num_customers),k=N)
             new_matrix=deepcopy(matrix)
             for customer in lst :
                 rd= choice(bina)
-                # if new_matrix[customer] != rd:
                 new_matrix[customer] = rd
             if self.check_constraints(new_matrix) and (not (new_matrix==matrix).all()) :
                 break
@@ -170,24 +98,16 @@ class Hillclimbing:
     
     def objective_function(self,matrix:np):
         self.__read_input()
-        num_customers=self.num_customers
         num_trucks=self.num_trucks
-        quantity=self.__quantity
-        value=self.__value 
-        lower_bound=self.__lower_bound
-        upper_bound=self.__upper_bound
+        value=self.__value
         
         K=np.ones(num_trucks,)
         return (value@matrix)@K
     
     def hill_climbing(self,timelimit):
         self.__read_input()
-        num_customers=self.num_customers
-        num_trucks=self.num_trucks
-        quantity=self.__quantity
-        value=self.__value 
         start = time.time()
-        # greedy_solution = self.greedy()
+        
         greedy_solution = GreedySolver(input_file=self.__input_file).solve().T
         initial_solution= self.create_neighbour(greedy_solution)
     
@@ -199,12 +119,8 @@ class Hillclimbing:
         record_score =[current_score]
         
         while True:
-            
             end=time.time() 
             if end - start >= timelimit:
-                # print(f'best_value = {int(best_score)}/{value.sum()}, total packages = {int(best_solution.sum())}/{num_customers}')
-                # plt.plot(record_score)
-                # plt.show()
                 return best_solution,best_score
             next_solution = self.create_neighbour(current_solution)
             next_score = self.objective_function(next_solution)
@@ -216,30 +132,31 @@ class Hillclimbing:
             else:
                 current_solution= next_solution
         
-    def solve(self):
+    def solve(self,timelimit=60):
         self.__read_input()
-
-        self.solution,self.objective_value = self.hill_climbing(timelimit=60)      
+        
+        self.solution,self.objective_value = self.hill_climbing(timelimit)      
         self.num_deliver_packages = self.solution.sum()
-
-
         
-if __name__ =="__main__":           
+        return self.solution
+    
+    def plan(self,timelimit = 60):
+        self.solution = self.solve(timelimit=timelimit)
+        if self.solution is None:
+            return f"No solution found"
+        plan = []
+        for weight in self.solution.T:
+            on_this_truck = []
+            for index, elem in enumerate(weight):
+                if elem == 1:
+                    on_this_truck.append(index + 1)
+            plan.append(on_this_truck)
 
-    t1=time.time()
-    solver=Hillclimbing(input_file='1.txt')
-    hill=solver.hill_climbing(20)
-    t2=time.time()
-    print(t2 - t1)
-   
-                    
-                    
-                    
+        string_plan = "\n\n".join([f"- Truck {idx+1} contains goods of {len(plan[idx])} customers: {', '.join([str(val) for val in on_this_truck])}" for idx, on_this_truck in enumerate(plan)])
+        res = f"With the maximum total values of {int(self.objective_value)}/{self.total_value}, we deliver {self.num_deliver_packages}/{self.num_customers} packages with the plan below: \n{string_plan}"
+        return res      
         
-
-
-
-
-
-
-
+if __name__ =="__main__":     
+          
+    solver=Hillclimbing(input_file='data.txt')
+    print(solver.plan())
