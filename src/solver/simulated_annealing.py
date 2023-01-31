@@ -9,7 +9,10 @@ from random import *
 from copy import deepcopy
 from math import *
 import matplotlib.pyplot as plt
-from src.solver.initial_greedy import *
+if __name__ == "__main__":
+    from initial_greedy import GreedySolver
+else:
+    from .initial_greedy import GreedySolver
 class Simulatedannealing:
     def __init__(self,input_file,*args):
         super().__init__(*args)
@@ -27,7 +30,6 @@ class Simulatedannealing:
         value=[]
         lower_bound=[]
         upper_bound=[]
-        
         #first line
         customers, trucks=[int(val) for val in lines[0].split(' ')]
 
@@ -65,70 +67,10 @@ class Simulatedannealing:
         upper_bound=self.__upper_bound 
         
         real_load_matrix=np.dot(quantity,matrix)
-        #print(real_load_matrix)
         for i,weight in enumerate(real_load_matrix):
             if  weight > upper_bound[i] or weight < lower_bound[i]:
                 return False
         return True
-    
-    def greedy(self):
-        self.__read_input()
-        num_customers=self.num_customers
-        num_trucks=self.num_trucks
-        quantity=self.__quantity
-        value=self.__value 
-        lower_bound=self.__lower_bound
-        upper_bound=self.__upper_bound 
-        
-        customer_rate=[(i, value[i]) for i in range(num_customers)]
-        customer_rate.sort(key=lambda x: -x[1]) # Sort giam dan
-
-        truck_rate=[(i,upper_bound[i]) for i in range(num_trucks)]
-        truck_rate.sort(key=lambda x: -x[1])
-
-        matrix=np.zeros((num_customers,num_trucks))
-        
-        real_load=[0 for truck in range(num_trucks)]
-        
-        for idx, rate in customer_rate:
-
-            q_customer=quantity[idx]
-            v_customer=value[idx]
-            
-            # Nhet du lower
-            for t in truck_rate: # Chon xe
-                truck=t[0]
-                lower=lower_bound[truck]
-                upper=upper_bound[truck]
-
-                if real_load[truck] < lower and real_load[truck] + q_customer <= upper: # nhet du lower da
-                    real_load[truck] += q_customer
-                    matrix[idx][truck]=1
-                    break
-
-        # Toi day la co du lower bound r, phai check xem hang dc nhet vao xe chua, chua dc nhet thi minh nhet vao
-        for idx, rate in customer_rate:
-            if matrix[idx].sum() > 0:
-                continue
-            q_customer=quantity[idx]
-            
-            # Nhet du lower
-            #print(f"{q_customer=}")
-            for t in truck_rate: # Chon xe
-                truck=t[0]
-                lower=lower_bound[truck]
-                upper=upper_bound[truck]
-
-                #print(f"Truck {truck} load: {real_load[truck]}, upper bound: {upper}, diff: {upper - real_load[truck]}")
-                if real_load[truck] + q_customer <= upper: # nhet vua xe
-                    real_load[truck] += q_customer
-                    matrix[idx][truck]=1
-                    break
-        # a=np.ones(num_trucks,)
-        # print(f"Number of goods delivered: {int(matrix.sum())}/{self.num_customers}")
-        # print(f"Total goods' values: {(value@matrix)@a}")
-        # matrix[0]=[1,0]
-        return matrix
     
     def create_binary(self):
         self.__read_input()
@@ -186,7 +128,6 @@ class Simulatedannealing:
         start= time.time()
         current_temperature = temperature
         
-        # greedy_solution = self.greedy()
         greedy_solution = GreedySolver(input_file=self.__input_file).solve().T
         
         initial_solution = self.create_neighbour(greedy_solution,self.create_binary())
@@ -241,19 +182,36 @@ class Simulatedannealing:
                 if best_score <= current_score:
                     best_solution = current_solution
                     best_score = current_score
-    def solve(self):
+    def solve(self,temperature = 1000, cooling_rate = 0.7, timelimit = 60):
         self.__read_input()
-
-        self.solution,self.objective_value = self.simulated_annealing(temperature=1000,cooling_rate=0.7,timelimit=60)      
-        self.num_deliver_packages = self.solution.sum()            
-if __name__ =="__main__":
+        self.solution,self.objective_value = self.simulated_annealing(temperature,cooling_rate,timelimit)      
+        self.num_deliver_packages = self.solution.sum()
+        return self.solution
     
-    t1=time.time()
-    solver=Simulatedannealing(input_file='1.txt')
-    print(solver.objective_function(solver.create_neighbour(solver.greedy(),solver.create_binary())))
-    solver.simulated_annealing(temperature=1000,cooling_rate=0.7,timelimit=60)
-    t2=time.time()
-    print(t2-t1)
+    def plan(self, temperature = 1000, cooling_rate = 0.7, timelimit = 60):
+        self.solution = self.solve()
+        if self.solution is None:
+            return f"No solution found"
+        plan = []
+        for weight in self.solution.T:
+            on_this_truck = []
+            for index, elem in enumerate(weight):
+                if elem == 1:
+                    on_this_truck.append(index + 1)
+            plan.append(on_this_truck)
+
+        string_plan = "\n\n".join([f"- Truck {idx+1} contains goods of {len(plan[idx])} customers: {', '.join([str(val) for val in on_this_truck])}" for idx, on_this_truck in enumerate(plan)])
+        res = f"With the maximum total values of {int(self.objective_value)}/{self.total_value}, we deliver {self.num_deliver_packages}/{self.num_customers} packages with the plan below: \n{string_plan}"
+        return res      
+          
+if __name__ =="__main__":
+
+    solver=Simulatedannealing(input_file='12.txt')
+    
+    
+    print(solver.plan())
+    
+    
 
                     
                     

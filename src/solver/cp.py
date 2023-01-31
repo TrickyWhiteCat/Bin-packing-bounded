@@ -201,6 +201,7 @@ class CPSolver:
         solution = []
         for truck_idx in range(self.num_trucks):
             solution.append(solution_callback.solution[truck_idx * self.num_customers: (truck_idx+1) * self.num_customers])
+        
         return solution
 
     def plan(self):
@@ -222,7 +223,7 @@ class CPSolver:
 
 def main():
     logging.basicConfig(level=logging.INFO)
-    solver = CPSolver(input_file="1.txt", use_greedy=True)
+    solver = CPSolver(input_file="12.txt", use_greedy=True)
     print(solver.plan())
 
 

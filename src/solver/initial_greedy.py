@@ -8,7 +8,7 @@ class GreedySolver:
         if logger is None:
             logger = logging.getLogger("GreedySolver")
         self.__logger = logger
-
+        
     def __read_input(self):
         self.__logger.info(f"Trying to read input...")
         if self.__input_file is None:
