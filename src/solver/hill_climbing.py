@@ -132,8 +132,7 @@ class Hillclimbing:
                 record_score.append(best_score)
             else:
                 current_solution= next_solution
-        
-    def solve(self,timelimit=60):
+
     def solve(self,timelimit=60):
         self.__read_input()
         
