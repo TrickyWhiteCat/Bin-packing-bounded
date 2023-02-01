@@ -5,4 +5,5 @@ def transform_solution(solver):
         return "No solution found!"
     trucks = np.array(solution).T.argmax(axis=1) + 1
     customers = range(1, solver.num_customers + 1)
-    return f"{solver.objective_value}" + "\n" + "\n".join([f"{customer} {truck}" for customer, truck in zip(customers, trucks)])
+    num_customers = len(trucks)
+    return f"{num_customers}" + "\n" + "\n".join([f"{customer} {truck}" for customer, truck in zip(customers, trucks)])
