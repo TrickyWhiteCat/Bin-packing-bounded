@@ -14,12 +14,12 @@ def main():
 
     data_path = "data.txt"
 
-    '''generate_data(filename=data_path,
+    generate_data(filename=data_path,
                   N = 50,
                   K = 5,
                   MAX_Q=10,
                   MIN_C=5,
-                  MAX_C=10)'''
+                  MAX_C=10)
     time_limit = 3
 
     # Initialize solvers
