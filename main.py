@@ -8,17 +8,18 @@ import time
 
 from src import GreedySolver, CPSolver, ILPSolver, HillClimbing, SimulatedAnnealing
 from src.solver.utils.data_generator import generate_data
+from src.solver.utils.solution_transformer import transform_solution
 
 def main():
 
     data_path = "data.txt"
 
-    generate_data(filename=data_path,
+    '''generate_data(filename=data_path,
                   N = 50,
                   K = 5,
                   MAX_Q=10,
                   MIN_C=5,
-                  MAX_C=10)
+                  MAX_C=10)'''
     time_limit = 3
 
     # Initialize solvers
@@ -36,6 +37,7 @@ def main():
         start = time.time()
         res = solver.plan()
         print(res)
+        print(transform_solution(solver))
         print(f"Execution time: {time.time() - start:.2f}s\n")
 
 if __name__ == "__main__":

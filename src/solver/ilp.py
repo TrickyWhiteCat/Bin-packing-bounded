@@ -116,7 +116,7 @@ class ILPSolver:
         return res
 
 def main():
-    solver = ILPSolver(input_file="1.txt", time_limit=10)
+    solver = ILPSolver(input_file="data.txt", time_limit=10)
     print(solver.plan())
 
 if __name__ == '__main__':
