@@ -13,6 +13,11 @@ class GreedySolver:
         except KeyError:
             self.__prioritize = None
 
+        try:
+            self.__order = kwargs["order"]
+        except KeyError:
+            self.__order = None
+
     def __read_input(self):
         self.__logger.info(f"Trying to read input...")
         if self.__input_file is None:
@@ -67,7 +72,7 @@ class GreedySolver:
 
         self.__logger.info("Input was processed")
 
-    def __add_goods(self, prioritize: str = "quantity"):
+    def __add_goods(self, prioritize: str = "quantity", truck_order: str = "lower"):
         if prioritize == "quantity":
             customer_rate=[(i, self.__quantity[i]) for i in range(self.num_customers)]
         if prioritize == "value":
@@ -103,9 +108,15 @@ class GreedySolver:
         customer_rate.sort(key=lambda x: -x[1]) # Sort giam dan theo value
         self.__logger.info("Done")
 
-        self.__logger.info("Sorting trucks by lower bounds...")
-        truck_rate=[(i, self.__lower_bound[i]) for i in range(self.num_trucks)]
-        truck_rate.sort(key=lambda x: -x[1])
+
+        self.__logger.info(f"Sorting trucks by {truck_order} bounds...")
+        if truck_order == "lower":
+            truck_rate=[(i, -self.__lower_bound[i]) for i in range(self.num_trucks)] # Sort in descending order
+        if truck_order == "upper":
+            truck_rate=[(i, -self.__upper_bound[i]) for i in range(self.num_trucks)] # Sort in descending order
+        if truck_order == "difference":
+            truck_rate=[(i, self.__upper_bound[i] - self.__lower_bound[i]) for i in range(self.num_trucks)] # Sort in ascending order
+        truck_rate.sort(key=lambda x: x[1])
         self.__logger.info("Done")
 
         goods_pos=np.zeros(shape=(self.num_customers,self.num_trucks)) # Position of goods. Goods[customer_idx][truck_idx] ==1 means that package was put on truck with corresponding idx
@@ -169,13 +180,20 @@ class GreedySolver:
             prioritize = ["efficiency", "value", "importance", "quantity"]
         else:
             prioritize = [self.__prioritize]
+
+        if self.__order is None:
+            truck_order = ["lower", "upper", "difference"]
+        else:
+            truck_order = [self.__order]
+            
         for key in prioritize:
-            try:
-                self.__logger.info(f"Trying to use greedy algorithm with packages sorted by {key}")
-                goods_pos = self.__add_goods(prioritize=key)
-                break
-            except ValueError:
-                self.__logger.error(f"Fail when using greedy algorithm with packages sorted by {key}")
+            for order in truck_order:
+                try:
+                    self.__logger.info(f"Trying to use greedy algorithm with packages sorted by {key} and trucks sorted by {order} bound")
+                    goods_pos = self.__add_goods(prioritize=key, truck_order=order)
+                    break
+                except ValueError:
+                    self.__logger.error(f"Fail when using greedy algorithm with packages sorted by {key} and trucks sorted by {order} bound")
 
         if goods_pos is None: # No solution found using all keys
             self.__logger.fatal(f"Fail to use greedy algorithm.")  
