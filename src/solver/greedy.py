@@ -186,14 +186,17 @@ class GreedySolver:
         else:
             truck_order = [self.__order]
             
-        for key in prioritize:
-            for order in truck_order:
-                try:
-                    self.__logger.info(f"Trying to use greedy algorithm with packages sorted by {key} and trucks sorted by {order} bound")
-                    goods_pos = self.__add_goods(prioritize=key, truck_order=order)
-                    break
-                except ValueError:
-                    self.__logger.error(f"Fail when using greedy algorithm with packages sorted by {key} and trucks sorted by {order} bound")
+        try:
+            for key in prioritize:
+                for order in truck_order:
+                    try:
+                        self.__logger.info(f"Trying to use greedy algorithm with packages sorted by {key} and trucks sorted by {order} bound")
+                        goods_pos = self.__add_goods(prioritize=key, truck_order=order)
+                        raise ArithmeticError("Done") # Used to break nested for loops
+                    except ValueError:
+                        self.__logger.error(f"Fail when using greedy algorithm with packages sorted by {key} and trucks sorted by {order} bound")
+        except ArithmeticError:
+            pass
 
         if goods_pos is None: # No solution found using all keys
             self.__logger.fatal(f"Fail to use greedy algorithm.")  
