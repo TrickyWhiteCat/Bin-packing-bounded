@@ -134,3 +134,6 @@ dmypy.json
 
 # Notebooks for data processing
 *.ipynb
+
+# VSCode profile
+.vscode/
