@@ -9,6 +9,15 @@ def to_float(arr: list):
 def unsqueeze(arr:list):
     return [arr]
 
+def matsum(mat):
+    if not is_matrix(mat):
+        raise TypeError(f"`mat` is not a valid matrix.")
+    res = 0
+    for row in mat:
+        for elem in row:
+            res += elem
+    return res
+
 def is_matrix(arr: list):
     '''Check if a given array is a valid matrix: consistent length of rows and columns and has exactly 2 dimensions.'''
 
@@ -53,7 +62,7 @@ def matmul(a: list, b: list, dtype = None):
     k = len(b[0])
     
     # Create a new matrix to store the result
-    res = zeros(m, k) # Result's shape should be m x k
+    res = zeros((m, k)) # Result's shape should be m x k
 
     for row_idx in range(m):
         for col_idx in range(k):
@@ -67,7 +76,19 @@ def matmul(a: list, b: list, dtype = None):
 def transpose(mat):
     if not is_matrix(mat):
         raise TypeError("Input is not a valid matrix.")
-    return [[mat[row_idx, col_idx] for row_idx in range(len(mat))] for col_idx in range(len(mat[0]))]
+    return [[mat[row_idx][col_idx] for row_idx in range(len(mat))] for col_idx in range(len(mat[0]))]
+
+def transform_solution(solver):
+    import numpy as np
+    solution = solver.solve()
+    if solution is None:
+        return "No solution found!"
+    solution = np.array(solution)
+    delivered = solution.T.sum(axis=1) != 0 # Sum == 0 means that that package haven't been delivered
+    trucks = (solution.T.argmax(axis=1) + 1) * delivered
+    customers = range(1, solver.num_customers + 1)
+    num_customers = np.sum(delivered)
+    return f"{num_customers}" + "\n" + "\n".join([f"{customer} {truck}" for customer, truck in zip(customers, trucks) if truck != 0])
 
 class GreedySolver:
     def __init__(self, input_file, logger = None, *args, **kwargs):
@@ -219,7 +240,7 @@ class GreedySolver:
         # Toi day la co du lower bound r, phai check xem hang dc nhet vao xe chua, chua dc nhet thi minh nhet vao
         self.__logger.info("Adding goods until full...")
         for cus_idx, rate in customer_rate:
-            if goods_pos[cus_idx].sum() > 0: # Kiem tra xem hang dc dat len xe chua
+            if sum(goods_pos[cus_idx]) > 0: # Kiem tra xem hang dc dat len xe chua
                 continue 
 
             q_customer = self.__quantity[cus_idx]
@@ -268,10 +289,10 @@ class GreedySolver:
 
         self.__logger.info(f"Solution was get")
         self.solution = goods_pos
-        self.__truck_values = matmul(transpose(goods_pos), unsqueeze(self.__value), dtype=int)
-        self.__real_load = matmul(transpose(goods_pos), unsqueeze(self.__quantity), dtype=int)
-        self.objective_value = self.__truck_values.sum()
-        self.num_deliver_packages = int(goods_pos.sum())
+        self.__truck_values = matmul(transpose(goods_pos), transpose(unsqueeze(self.__value)), dtype=int)
+        self.__real_load = matmul(transpose(goods_pos), transpose(unsqueeze(self.__quantity)), dtype=int)
+        self.objective_value = matsum(self.__truck_values)
+        self.num_deliver_packages = int(matsum(goods_pos))
 
         for truck_idx in range(self.num_trucks):
             self.__logger.debug(f"Truck {truck_idx+1}: Bounds: [{self.__lower_bound[truck_idx]}, {self.__upper_bound[truck_idx]}], Load: {self.__real_load[truck_idx]}, Goods values: {self.__truck_values[truck_idx]}")
@@ -279,7 +300,7 @@ class GreedySolver:
         self.__logger.info(f"Number of goods delivered: {self.num_deliver_packages}/{self.num_customers}")
         self.__logger.info(f"Total goods' values: {self.objective_value}")
 
-        return goods_pos.T
+        return transpose(goods_pos)
 
     def plan(self):
         self.solution = self.solve()
@@ -300,7 +321,7 @@ class GreedySolver:
 def main():
     logging.basicConfig(level=logging.INFO)
     solver = GreedySolver(input_file='data.txt')
-    solution = solver.solve()
+    print(transform_solution(solver))
 
 if __name__ == "__main__":
     main()
