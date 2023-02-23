@@ -93,7 +93,7 @@ def transform_solution(solver):
 
     return f"{num_customers}" + "\n" + "\n".join([f"{customer} {truck}" for customer, truck in goods_pos])
 
-class GreedySolver:
+class IndependentGreedySolver:
     def __init__(self, input_file, logger = None, *args, **kwargs):
         self.__input_file = input_file
         if logger is None:
@@ -335,7 +335,7 @@ class GreedySolver:
 
 def main():
     logging.basicConfig(level=logging.FATAL+1)
-    solver = GreedySolver(input_file='data.txt', from_file = False)
+    solver = IndependentGreedySolver(input_file='data.txt', from_file = True)
     print(transform_solution(solver))
 
 if __name__ == "__main__":
