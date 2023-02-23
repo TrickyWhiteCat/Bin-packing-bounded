@@ -35,7 +35,7 @@ from src import GreedySolver, CPSolver, ILPSolver, HillClimbing, SimulatedAnneal
 ```python
 model = GreedySolver(input_file=data_path)
 ```
-_-`data_path` here should be the path to the text file containing data._
+_- `data_path` here should be the path to the text file containing data._
 
 _- For more information about solvers' specific arguments, head to the implementation of it._
 
